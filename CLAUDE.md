@@ -216,8 +216,11 @@ oraculo-thorus/
 ├── packages/
 │   └── shared-types/
 ├── infra/
-│   ├── docker-compose.yml
-│   └── supabase/migrations/
+│   └── docker-compose.yml
+├── supabase/
+│   ├── .gitignore
+│   ├── config.toml
+│   └── migrations/
 │       └── 0001_initial_schema.sql
 ├── evals/
 │   └── README.md
@@ -334,3 +337,4 @@ e dispara agentes. Na Fase 1 quase não usamos, mas a infraestrutura existe.
 - Conversas e mensagens são privadas por usuário
 - Reranking adiado pra fase 2 (sem Cohere Rerank no piloto)
 - Estrutura agêntica desde Fase 1 (agents/, agent_outputs, approvals, events)
+- Supabase keys usam o formato novo (sb_publishable_xxx e sb_secret_xxx) — variáveis de ambiente são SUPABASE_PUBLISHABLE_KEY e SUPABASE_SECRET_KEY (não anon/service_role).

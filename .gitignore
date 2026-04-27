@@ -48,6 +48,9 @@ supabase/.branches/
 .DS_Store
 Thumbs.db
 
+# Claude Code (local session cache, not part of the repo)
+.claude/
+
 # Logs
 *.log
 logs/
