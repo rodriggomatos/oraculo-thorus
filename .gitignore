@@ -1,0 +1,56 @@
+# Node / pnpm
+node_modules/
+.pnpm-store/
+.next/
+.turbo/
+out/
+dist/
+build/
+*.tsbuildinfo
+.npm/
+.yarn/
+
+# Python / uv
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+.eggs/
+*.egg-info/
+*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+.uv/
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Supabase
+supabase/.temp/
+supabase/.branches/
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Docker volumes
+infra/data/
