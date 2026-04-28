@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     llm_model_fast: str = "groq/llama-3.3-70b-versatile"
     llm_model_smart: str = "groq/llama-3.3-70b-versatile"
     groq_api_key: str = ""
+    anthropic_api_key: str | None = None
 
     embedding_provider: str = "openai"
     embedding_model: str = "text-embedding-3-small"

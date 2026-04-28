@@ -18,6 +18,16 @@ from oraculo_ai.agents.qa.tools import (
 from oraculo_ai.core.config import get_settings
 
 
+def _resolve_api_key(model: str, settings: Any) -> str | None:
+    if model.startswith("anthropic/"):
+        return settings.anthropic_api_key
+    if model.startswith("groq/"):
+        return settings.groq_api_key
+    if model.startswith("openai/"):
+        return settings.openai_api_key
+    return None
+
+
 _SYSTEM_PROMPT = """Você é o Thor, oráculo técnico da Thórus Engenharia.
 
 Sua função é responder perguntas sobre definições técnicas de projetos da empresa.
@@ -67,7 +77,7 @@ async def answer_question(query: QAQuery) -> QAAnswer:
     llm = ChatLiteLLM(
         model=settings.llm_model_smart,
         temperature=0,
-        api_key=settings.groq_api_key or None,
+        api_key=_resolve_api_key(settings.llm_model_smart, settings),
     )
 
     agent = create_agent(
