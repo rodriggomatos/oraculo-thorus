@@ -7,6 +7,7 @@ from langchain.agents import create_agent
 from langchain_core.messages import AIMessage, ToolMessage
 from langchain_litellm import ChatLiteLLM
 from langfuse import get_client, observe
+from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.checkpoint.memory import InMemorySaver
 
 from oraculo_ai.agents.qa.schema import Citation, QAAnswer, QAQuery
@@ -71,7 +72,10 @@ _checkpointer = InMemorySaver()
 
 
 @observe(as_type="agent", name="qa-agent")
-async def answer_question(query: QAQuery) -> QAAnswer:
+async def answer_question(
+    query: QAQuery,
+    checkpointer: BaseCheckpointSaver | None = None,
+) -> QAAnswer:
     settings = get_settings()
 
     llm = ChatLiteLLM(
@@ -84,7 +88,7 @@ async def answer_question(query: QAQuery) -> QAAnswer:
         model=llm,
         tools=[search_definitions, list_projects, find_project_by_name],
         system_prompt=_SYSTEM_PROMPT,
-        checkpointer=_checkpointer,
+        checkpointer=checkpointer if checkpointer is not None else _checkpointer,
     )
 
     if query.project_number is not None:
