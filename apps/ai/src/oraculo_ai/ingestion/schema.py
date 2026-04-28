@@ -3,7 +3,7 @@
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class Definition(BaseModel):
@@ -25,16 +25,6 @@ class Definition(BaseModel):
     source_sheet_id: str | None = None
     source_row: int | None = None
     raw_data: dict[str, Any] | None = None
-
-
-class ChunkData(BaseModel):
-    project_id: UUID
-    source_table: str
-    source_row_id: UUID
-    content: str
-    content_hash: str
-    embedding: list[float] | None = None
-    metadata: dict[str, str] = Field(default_factory=dict)
 
 
 class IngestionStats(BaseModel):

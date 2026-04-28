@@ -1,20 +1,22 @@
-"""UPSERT em definitions e chunks via psycopg 3 async + pgvector."""
+"""Persistência: definitions via psycopg + chunks via PGVectorStore (LlamaIndex)."""
 
 from types import TracebackType
 from typing import Any
 from uuid import UUID
 
-from pgvector.psycopg import register_vector_async
-from psycopg import AsyncConnection
+from llama_index.core import Settings
+from llama_index.core.schema import TextNode
+from llama_index.vector_stores.postgres import PGVectorStore
 from psycopg.rows import dict_row
 from psycopg.types.json import Json
 from psycopg_pool import AsyncConnectionPool
+from sqlalchemy import text
+from sqlalchemy.exc import ProgrammingError
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
-from oraculo_ai.ingestion.schema import ChunkData, Definition
-
-
-async def _configure_connection(conn: AsyncConnection) -> None:
-    await register_vector_async(conn)
+from oraculo_ai.core.config import get_settings
+from oraculo_ai.ingestion.google_sheets.vector_store import make_vector_store
+from oraculo_ai.ingestion.schema import Definition
 
 
 class SheetsRepository:
@@ -25,13 +27,7 @@ class SheetsRepository:
     async def open(self) -> None:
         if self._pool is not None:
             return
-        pool = AsyncConnectionPool(
-            self._dsn,
-            min_size=1,
-            max_size=4,
-            open=False,
-            configure=_configure_connection,
-        )
+        pool = AsyncConnectionPool(self._dsn, min_size=1, max_size=4, open=False)
         await pool.open()
         self._pool = pool
 
@@ -111,68 +107,95 @@ class SheetsRepository:
                     raise RuntimeError("upsert_definition returned no row")
                 return row[0], bool(row[1])
 
-    async def fetch_chunk_for_source(
+
+class ChunksVectorStore:
+    def __init__(self) -> None:
+        self._engine: AsyncEngine | None = None
+        self._vector_store: PGVectorStore | None = None
+
+    async def open(self) -> None:
+        if self._vector_store is not None:
+            return
+        settings = get_settings()
+        async_dsn = settings.database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        self._engine = create_async_engine(async_dsn)
+        self._vector_store = make_vector_store()
+
+    async def close(self) -> None:
+        if self._engine is not None:
+            await self._engine.dispose()
+            self._engine = None
+        self._vector_store = None
+
+    async def __aenter__(self) -> "ChunksVectorStore":
+        await self.open()
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> None:
+        await self.close()
+
+    @property
+    def _ensured_engine(self) -> AsyncEngine:
+        if self._engine is None:
+            raise RuntimeError("ChunksVectorStore not opened; call await store.open() first")
+        return self._engine
+
+    @property
+    def _ensured_store(self) -> PGVectorStore:
+        if self._vector_store is None:
+            raise RuntimeError("ChunksVectorStore not opened; call await store.open() first")
+        return self._vector_store
+
+    async def fetch_existing_node_id_for_source(
         self,
         source_table: str,
         source_row_id: UUID,
-    ) -> dict[str, Any] | None:
-        async with self._ensured_pool.connection() as conn:
-            async with conn.cursor(row_factory=dict_row) as cur:
-                await cur.execute(
-                    "SELECT id, content_hash FROM chunks "
-                    "WHERE source_table = %s AND source_row_id = %s LIMIT 1",
-                    (source_table, source_row_id),
-                )
-                return await cur.fetchone()
-
-    async def upsert_chunk(
-        self,
-        chunk: ChunkData,
-        existing_id: UUID | None = None,
-    ) -> tuple[UUID, str]:
-        async with self._ensured_pool.connection() as conn:
-            async with conn.cursor() as cur:
-                if existing_id is None:
-                    await cur.execute(
-                        """
-                        INSERT INTO chunks (
-                            project_id, source_table, source_row_id,
-                            content, content_hash, embedding, metadata
-                        ) VALUES (
-                            %s, %s, %s, %s, %s, %s, %s
-                        )
-                        RETURNING id
-                        """,
-                        (
-                            chunk.project_id,
-                            chunk.source_table,
-                            chunk.source_row_id,
-                            chunk.content,
-                            chunk.content_hash,
-                            chunk.embedding,
-                            Json(chunk.metadata),
-                        ),
-                    )
-                    row = await cur.fetchone()
-                    if row is None:
-                        raise RuntimeError("insert chunk returned no row")
-                    return row[0], "created"
-
-                await cur.execute(
-                    """
-                    UPDATE chunks SET
-                        content = %s,
-                        content_hash = %s,
-                        embedding = %s,
-                        metadata = %s
-                    WHERE id = %s
-                    """,
-                    (
-                        chunk.content,
-                        chunk.content_hash,
-                        chunk.embedding,
-                        Json(chunk.metadata),
-                        existing_id,
+    ) -> tuple[str, str] | None:
+        try:
+            async with self._ensured_engine.connect() as conn:
+                result = await conn.execute(
+                    text(
+                        "SELECT node_id, metadata_->>'content_hash' AS content_hash "
+                        "FROM data_chunks "
+                        "WHERE metadata_->>'source_table' = :st "
+                        "AND metadata_->>'source_row_id' = :srid "
+                        "LIMIT 1"
                     ),
+                    {"st": source_table, "srid": str(source_row_id)},
                 )
-                return existing_id, "updated"
+                row = result.first()
+        except ProgrammingError:
+            return None
+        if row is None:
+            return None
+        return (str(row.node_id), row.content_hash or "")
+
+    async def add_or_update(
+        self,
+        definition_id: UUID,
+        project_id: UUID,
+        content: str,
+        content_hash: str,
+        metadata_extra: dict[str, str],
+        existing_node_id: str | None,
+    ) -> str:
+        store = self._ensured_store
+        if existing_node_id is not None:
+            await store.adelete_nodes(node_ids=[existing_node_id])
+
+        metadata: dict[str, Any] = {
+            "source_table": "definitions",
+            "source_row_id": str(definition_id),
+            "project_id": str(project_id),
+            "content_hash": content_hash,
+            **metadata_extra,
+        }
+        node = TextNode(text=content, metadata=metadata)
+        node.embedding = await Settings.embed_model.aget_text_embedding(content)
+        ids = await store.async_add([node])
+        return str(ids[0])

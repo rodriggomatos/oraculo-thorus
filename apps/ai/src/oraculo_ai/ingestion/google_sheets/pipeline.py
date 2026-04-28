@@ -7,9 +7,8 @@ from oraculo_ai.core.config import get_settings
 from oraculo_ai.ingestion.google_sheets.connector import build_sheets_service, read_sheet
 from oraculo_ai.ingestion.google_sheets.content import build_chunk_text, compute_hash
 from oraculo_ai.ingestion.google_sheets.parser import parse_row
-from oraculo_ai.ingestion.google_sheets.repository import SheetsRepository
-from oraculo_ai.ingestion.schema import ChunkData, IngestionStats
-from oraculo_ai.llm.client import embed
+from oraculo_ai.ingestion.google_sheets.repository import ChunksVectorStore, SheetsRepository
+from oraculo_ai.ingestion.schema import IngestionStats
 
 
 async def run_ingestion(
@@ -23,7 +22,10 @@ async def run_ingestion(
 
     stats = IngestionStats()
 
-    async with SheetsRepository(settings.database_url) as repo:
+    async with (
+        SheetsRepository(settings.database_url) as repo,
+        ChunksVectorStore() as chunks_store,
+    ):
         project = await repo.get_project_by_number(project_number)
         if project is None:
             raise RuntimeError(
@@ -60,16 +62,14 @@ async def run_ingestion(
             content = build_chunk_text(definition)
             content_hash = compute_hash(content)
 
-            existing = await repo.fetch_chunk_for_source("definitions", def_id)
-            if existing is not None and existing.get("content_hash") == content_hash:
+            existing = await chunks_store.fetch_existing_node_id_for_source(
+                "definitions", def_id
+            )
+            if existing is not None and existing[1] == content_hash:
                 stats.chunks_unchanged += 1
                 continue
 
-            vectors = await embed([content])
-            stats.embedding_calls += 1
-            embedding = vectors[0] if vectors else None
-
-            metadata: dict[str, str] = {
+            metadata_extra: dict[str, str] = {
                 "disciplina": definition.disciplina or "",
                 "tipo": definition.tipo or "",
                 "fase": definition.fase or "",
@@ -78,21 +78,19 @@ async def run_ingestion(
                 "project_number": str(project["project_number"]),
             }
 
-            chunk = ChunkData(
+            existing_node_id = existing[0] if existing is not None else None
+            await chunks_store.add_or_update(
+                definition_id=def_id,
                 project_id=project_id,
-                source_table="definitions",
-                source_row_id=def_id,
                 content=content,
                 content_hash=content_hash,
-                embedding=embedding,
-                metadata=metadata,
+                metadata_extra=metadata_extra,
+                existing_node_id=existing_node_id,
             )
-
-            existing_id = existing["id"] if existing is not None else None
-            _, action = await repo.upsert_chunk(chunk, existing_id=existing_id)
-            if action == "created":
+            stats.embedding_calls += 1
+            if existing_node_id is None:
                 stats.chunks_created += 1
-            elif action == "updated":
+            else:
                 stats.chunks_updated += 1
 
     return stats
