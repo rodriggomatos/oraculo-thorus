@@ -1,12 +1,15 @@
 """Pydantic schemas do agente Q&A."""
 
+from uuid import uuid4
+
 from pydantic import BaseModel, Field
 
 
 class QAQuery(BaseModel):
     question: str
-    project_number: int
+    project_number: int | None = None
     top_k: int = 5
+    thread_id: str = Field(default_factory=lambda: str(uuid4()))
 
 
 class Citation(BaseModel):

@@ -3,6 +3,7 @@
 import argparse
 import asyncio
 import sys
+from uuid import uuid4
 
 from oraculo_ai.agents.qa.agent import answer_question
 from oraculo_ai.agents.qa.schema import QAQuery
@@ -13,12 +14,18 @@ if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 
-async def _run(question: str, project_number: int, top_k: int) -> None:
+async def _run(
+    question: str,
+    project_number: int | None,
+    top_k: int,
+    thread_id: str,
+) -> None:
     answer = await answer_question(
         QAQuery(
             question=question,
             project_number=project_number,
             top_k=top_k,
+            thread_id=thread_id,
         )
     )
 
@@ -38,9 +45,11 @@ def main() -> None:
         prog="python -m oraculo_ai.agents.qa.cli",
         description="Pergunta ao agente Q&A do Oráculo Thórus.",
         epilog=(
-            "Exemplo:\n"
-            '  python -m oraculo_ai.agents.qa.cli "qual o material da tubulação de gás?" --project-number 26002\n'
-            '  python -m oraculo_ai.agents.qa.cli "tem definição sobre piso da sala?" --project-number 26002 --top-k 8'
+            "Exemplos:\n"
+            '  python -m oraculo_ai.agents.qa.cli "qual o material do gás @26002"\n'
+            '  python -m oraculo_ai.agents.qa.cli "qual o material do gás no Stylo"\n'
+            '  python -m oraculo_ai.agents.qa.cli "qual o material do gás?" --project-number 26002\n'
+            '  python -m oraculo_ai.agents.qa.cli "qual o material do gás?"'
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -48,8 +57,8 @@ def main() -> None:
     parser.add_argument(
         "--project-number",
         type=int,
-        required=True,
-        help="Número do projeto (ex.: 26002).",
+        default=None,
+        help="Número do projeto (opcional). Se omitido, o agente tenta resolver pelo texto da pergunta ou pede ao usuário.",
     )
     parser.add_argument(
         "--top-k",
@@ -57,10 +66,17 @@ def main() -> None:
         default=5,
         help="Número de chunks que a tool de busca retorna (default: 5).",
     )
+    parser.add_argument(
+        "--thread-id",
+        default=None,
+        help="ID da sessão pra reaproveitar contexto (default: gera novo uuid; cada CLI = sessão isolada).",
+    )
     args = parser.parse_args()
 
+    thread_id = args.thread_id or str(uuid4())
+
     try:
-        asyncio.run(_run(args.question, args.project_number, args.top_k))
+        asyncio.run(_run(args.question, args.project_number, args.top_k, thread_id))
     finally:
         shutdown_traces()
 
