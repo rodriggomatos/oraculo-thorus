@@ -2,10 +2,15 @@
 
 import argparse
 import asyncio
+import sys
 from typing import get_args
 
 from oraculo_ai.llm.client import complete, embed, shutdown_traces
 from oraculo_ai.llm.schema import Message, ModelTier
+
+
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 
 async def _run_completion(prompt: str, model: ModelTier) -> None:

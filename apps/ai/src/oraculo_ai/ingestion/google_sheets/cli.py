@@ -2,9 +2,14 @@
 
 import argparse
 import asyncio
+import sys
 
 from oraculo_ai.ingestion.google_sheets.pipeline import run_ingestion
 from oraculo_ai.llm.client import shutdown_traces
+
+
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 
 async def _run(project_number: int, sheet_name: str) -> None:
