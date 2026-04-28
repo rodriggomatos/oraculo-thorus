@@ -4,11 +4,9 @@ import json
 from typing import Any
 
 from langchain.agents import create_agent
-from langchain.agents.structured_output import ToolStrategy
-from langchain_core.messages import ToolMessage
+from langchain_core.messages import AIMessage, ToolMessage
 from langchain_litellm import ChatLiteLLM
 from langfuse import get_client, observe
-from pydantic import BaseModel
 
 from oraculo_ai.agents.qa.schema import Citation, QAAnswer, QAQuery
 from oraculo_ai.agents.qa.tools import search_definitions
@@ -29,9 +27,12 @@ Regras inegociáveis:
 7. Se houver "Status: Em análise" ou "Validado: não", mencione isso — é informação crítica pra engenharia."""
 
 
-class _AgentOutput(BaseModel):
-    answer: str
-    found_relevant: bool
+_NEGATIVE_PHRASES: tuple[str, ...] = (
+    "não encontrei",
+    "não há essa informação",
+    "não tenho",
+    "recomendo verificar com",
+)
 
 
 @observe(as_type="agent", name="qa-agent")
@@ -48,7 +49,6 @@ async def answer_question(query: QAQuery) -> QAAnswer:
         model=llm,
         tools=[search_definitions],
         system_prompt=_SYSTEM_PROMPT,
-        response_format=ToolStrategy(_AgentOutput),
     )
 
     user_message = (
@@ -60,13 +60,14 @@ async def answer_question(query: QAQuery) -> QAAnswer:
         {"messages": [{"role": "user", "content": user_message}]}
     )
 
-    structured: _AgentOutput = result["structured_response"]
+    answer_text = _extract_answer(result["messages"])
     sources = _extract_citations(result["messages"])
+    found_relevant = not _looks_negative(answer_text)
 
     qa_answer = QAAnswer(
-        answer=structured.answer,
+        answer=answer_text,
         sources=sources,
-        found_relevant=structured.found_relevant,
+        found_relevant=found_relevant,
     )
 
     get_client().update_current_span(
@@ -84,6 +85,31 @@ async def answer_question(query: QAQuery) -> QAAnswer:
     )
 
     return qa_answer
+
+
+def _extract_answer(messages: list[Any]) -> str:
+    for msg in reversed(messages):
+        if not isinstance(msg, AIMessage):
+            continue
+        content = msg.content
+        if isinstance(content, str):
+            return content
+        if isinstance(content, list):
+            parts: list[str] = []
+            for block in content:
+                if isinstance(block, dict):
+                    text = block.get("text") or block.get("content")
+                    if text:
+                        parts.append(str(text))
+                elif isinstance(block, str):
+                    parts.append(block)
+            return "\n".join(parts)
+    return ""
+
+
+def _looks_negative(text: str) -> bool:
+    lowered = text.lower()
+    return any(phrase in lowered for phrase in _NEGATIVE_PHRASES)
 
 
 def _extract_citations(messages: list[Any]) -> list[Citation]:
