@@ -70,14 +70,16 @@ class SheetsRepository:
             project_id, disciplina, tipo, fase, item_code, pergunta,
             opcao_escolhida, status, custo, observacoes, validado,
             informacao_auxiliar, apoio_1, apoio_2,
-            source_sheet_id, source_row, raw_data
+            source_sheet_id, source_row, raw_data,
+            data_informacao, fonte_informacao, fonte_descricao
         ) VALUES (
             %(project_id)s, %(disciplina)s, %(tipo)s, %(fase)s, %(item_code)s, %(pergunta)s,
             %(opcao_escolhida)s, %(status)s, %(custo)s, %(observacoes)s, %(validado)s,
             %(informacao_auxiliar)s, %(apoio_1)s, %(apoio_2)s,
-            %(source_sheet_id)s, %(source_row)s, %(raw_data)s
+            %(source_sheet_id)s, %(source_row)s, %(raw_data)s,
+            %(data_informacao)s, %(fonte_informacao)s, %(fonte_descricao)s
         )
-        ON CONFLICT (project_id, item_code) DO UPDATE SET
+        ON CONFLICT (project_id, item_code) WHERE fonte_informacao = 'lista_definicoes_inicial' DO UPDATE SET
             disciplina = EXCLUDED.disciplina,
             tipo = EXCLUDED.tipo,
             fase = EXCLUDED.fase,
@@ -93,6 +95,8 @@ class SheetsRepository:
             source_sheet_id = EXCLUDED.source_sheet_id,
             source_row = EXCLUDED.source_row,
             raw_data = EXCLUDED.raw_data,
+            data_informacao = EXCLUDED.data_informacao,
+            fonte_descricao = EXCLUDED.fonte_descricao,
             updated_at = now()
         RETURNING id, (xmax = 0) AS inserted
         """
@@ -106,6 +110,34 @@ class SheetsRepository:
                 if row is None:
                     raise RuntimeError("upsert_definition returned no row")
                 return row[0], bool(row[1])
+
+    async def insert_definition_version(self, definition: Definition) -> UUID:
+        sql = """
+        INSERT INTO definitions (
+            project_id, disciplina, tipo, fase, item_code, pergunta,
+            opcao_escolhida, status, custo, observacoes, validado,
+            informacao_auxiliar, apoio_1, apoio_2,
+            source_sheet_id, source_row, raw_data,
+            data_informacao, fonte_informacao, fonte_descricao
+        ) VALUES (
+            %(project_id)s, %(disciplina)s, %(tipo)s, %(fase)s, %(item_code)s, %(pergunta)s,
+            %(opcao_escolhida)s, %(status)s, %(custo)s, %(observacoes)s, %(validado)s,
+            %(informacao_auxiliar)s, %(apoio_1)s, %(apoio_2)s,
+            %(source_sheet_id)s, %(source_row)s, %(raw_data)s,
+            %(data_informacao)s, %(fonte_informacao)s, %(fonte_descricao)s
+        )
+        RETURNING id
+        """
+        params: dict[str, Any] = definition.model_dump(exclude={"id"})
+        params["raw_data"] = Json(params["raw_data"]) if params["raw_data"] is not None else None
+
+        async with self._ensured_pool.connection() as conn:
+            async with conn.cursor() as cur:
+                await cur.execute(sql, params)
+                row = await cur.fetchone()
+                if row is None:
+                    raise RuntimeError("insert_definition_version returned no row")
+                return row[0]
 
 
 class ChunksVectorStore:

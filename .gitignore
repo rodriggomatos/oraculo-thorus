@@ -36,6 +36,9 @@ htmlcov/
 .env.*.local
 !.env.example
 
+# Project batch configs (real values; template is projects.example.yaml)
+projects.yaml
+
 # Supabase
 supabase/.temp/
 supabase/.branches/

@@ -1,0 +1,12 @@
+# Template de configuração. Copie pra projects.yaml e preencha com dados reais.
+# Cada projeto será inserido em projects e terá sua planilha LDP ingerida.
+
+projects:
+  - project_number: 26015
+    name: "Marina - Av. Beira Mar"
+    client: "Construtora Marina"
+    google_sheet_id: "EXEMPLO_SHEET_ID_AQUI"
+  - project_number: 27001
+    name: "Jardim Botânico"
+    client: "Família Souza"
+    google_sheet_id: "OUTRO_EXEMPLO"

@@ -7,9 +7,9 @@ from oraculo_ai.ingestion.schema import Definition
 
 
 COLUMN_MAP: dict[str, str] = {
-    "Geral": "disciplina",
+    "Disciplina": "disciplina",
     "Tipo": "tipo",
-    "Fase 02": "fase",
+    "Fase": "fase",
     "Item": "item_code",
     "Definições": "pergunta",
     "Status": "status",

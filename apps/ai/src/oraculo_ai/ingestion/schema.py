@@ -1,5 +1,6 @@
 """Pydantic schemas compartilhados entre conectores de ingestão."""
 
+from datetime import date
 from typing import Any
 from uuid import UUID
 
@@ -25,6 +26,9 @@ class Definition(BaseModel):
     source_sheet_id: str | None = None
     source_row: int | None = None
     raw_data: dict[str, Any] | None = None
+    data_informacao: date | None = None
+    fonte_informacao: str | None = None
+    fonte_descricao: str | None = None
 
 
 class IngestionStats(BaseModel):

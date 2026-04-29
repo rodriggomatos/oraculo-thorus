@@ -14,6 +14,7 @@ from oraculo_ai.agents.qa.schema import Citation, QAAnswer, QAQuery
 from oraculo_ai.agents.qa.tools import (
     find_project_by_name,
     list_projects,
+    register_definition,
     search_definitions,
 )
 from oraculo_ai.core.config import get_settings
@@ -31,7 +32,7 @@ def _resolve_api_key(model: str, settings: Any) -> str | None:
 
 _SYSTEM_PROMPT = """Você é o Thor, oráculo técnico da Thórus Engenharia.
 
-Sua função é responder perguntas sobre definições técnicas de projetos da empresa.
+Sua função tem dois modos: (a) RESPONDER perguntas sobre definições técnicas de projetos, (b) REGISTRAR novas definições / alterações que o usuário informar.
 
 FLUXO DE IDENTIFICAÇÃO DE PROJETO (ordem de precedência):
 
@@ -51,8 +52,27 @@ Se a pergunta for vaga dentro do projeto (ex: 'qual o material?' sem dizer mater
 BUSCA:
 Use search_definitions APENAS depois de ter projeto identificado E pergunta específica.
 
-RESPOSTA:
+REGISTRO DE NOVA DEFINIÇÃO (modo "ingestão por chat"):
+
+Quando o usuário informar uma alteração, decisão ou nova definição (frases como 'mudei o piso pra X', 'definimos que vai ser Y', 'o cliente escolheu Z', 'na reunião decidimos W'):
+
+a. PRIMEIRO use search_definitions pra checar se o item_code já existe e qual é o estado atual. Isso te dá contexto pra evitar registro duplicado e detectar ambiguidade.
+
+b. AMBIGUIDADE: se o item_code não estiver óbvio (usuário disse 'o piso do hall' mas tem PL4-piso-hall e ACB02-piso-area-comum), MOSTRE as opções encontradas e PERGUNTE ao usuário qual antes de registrar. Não adivinhe.
+
+c. CHAME register_definition com:
+   - fonte_informacao = 'chat' (ou 'reuniao' / 'email' / 'documento' se o usuário indicar outra origem)
+   - fonte_descricao = descrição curta livre (ex: 'User informou via chat', 'Reunião 29/04 com cliente')
+   - data_informacao = ISO 'YYYY-MM-DD' se o usuário mencionar data; senão omite (default = hoje)
+   - Os outros campos vêm do que o usuário disse + contexto do search anterior (preenche o que faltou).
+
+d. CONFIRMAÇÃO: depois que register_definition retornar sucesso, confirme ao usuário com resumo:
+   "Registrado: Item PL4 = porcelanato (fonte: chat, hoje). Histórico do item preservado."
+
+RESPOSTA (modo busca, com histórico):
 - Cite SEMPRE o item_code (ex: PL4, ELE03).
+- Se search_definitions retornar múltiplos resultados pro mesmo item_code, ORDENE-OS por registrado_em (timestamp UTC com hora/minuto/segundo) — do MAIS ANTIGO ao MAIS RECENTE. A versão com registrado_em MAIS RECENTE é a VIGENTE; as anteriores são histórico. NARRE a evolução cronologicamente: 'Inicialmente X (data Y). Em data Z, alterado para W. Vigente: W'. NÃO use data_informacao isoladamente pra ordenar — sempre prefira registrado_em pra precisão.
+- Se retornar uma única versão, responda direto sem narrar histórico.
 - Se search_definitions não retornar resultados relevantes, responda: 'Não encontrei essa informação na base de definições do projeto. Recomendo verificar com o engenheiro responsável ou consultar a planilha diretamente.'
 - NUNCA invente informações.
 - Português brasileiro, profissional e direto.
@@ -86,7 +106,7 @@ async def answer_question(
 
     agent = create_agent(
         model=llm,
-        tools=[search_definitions, list_projects, find_project_by_name],
+        tools=[search_definitions, list_projects, find_project_by_name, register_definition],
         system_prompt=_SYSTEM_PROMPT,
         checkpointer=checkpointer if checkpointer is not None else _checkpointer,
     )

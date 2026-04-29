@@ -30,6 +30,7 @@ dependencies = [
     "opentelemetry-exporter-otlp>=1.30.0,<2.0.0",
     "google-auth>=2.30.0,<3.0.0",
     "google-api-python-client>=2.140.0,<3.0.0",
+    "pyyaml>=6.0.0,<7.0.0",
 ]
 
 [dependency-groups]
