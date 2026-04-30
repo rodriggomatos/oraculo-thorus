@@ -9,6 +9,7 @@ import yaml
 from pydantic import BaseModel, ValidationError
 
 from oraculo_ai.core.config import get_settings
+from oraculo_ai.core.db import close_db, init_db
 from oraculo_ai.ingestion.google_sheets.pipeline import run_ingestion
 from oraculo_ai.ingestion.google_sheets.projects_repo import ProjectsWriter
 from oraculo_ai.ingestion.schema import IngestionStats
@@ -61,13 +62,12 @@ async def _run_one(project: ProjectConfig, writer: ProjectsWriter) -> IngestionS
 
 
 async def _run_batch(config: BatchConfig) -> None:
-    settings = get_settings()
     successful = 0
     total_chunks_created = 0
     total_chunks_updated = 0
     total_embedding_calls = 0
 
-    async with ProjectsWriter(settings.database_url) as writer:
+    async with ProjectsWriter() as writer:
         for project in config.projects:
             stats = await _run_one(project, writer)
             successful += 1
@@ -79,6 +79,15 @@ async def _run_batch(config: BatchConfig) -> None:
     print(f"Projetos ingeridos: {successful}/{len(config.projects)}")
     print(f"Chunks totais criados: {total_chunks_created + total_chunks_updated}")
     print(f"Embeddings totais: {total_embedding_calls}")
+
+
+async def _amain(config: BatchConfig) -> None:
+    settings = get_settings()
+    await init_db(settings.database_url, pool_size=3)
+    try:
+        await _run_batch(config)
+    finally:
+        await close_db()
 
 
 def main() -> None:
@@ -120,7 +129,7 @@ def main() -> None:
 
     exit_code = 0
     try:
-        asyncio.run(_run_batch(config))
+        asyncio.run(_amain(config))
     except Exception as exc:
         print(f"❌ ERRO durante batch: {type(exc).__name__}: {exc}", file=sys.stderr)
         exit_code = 1

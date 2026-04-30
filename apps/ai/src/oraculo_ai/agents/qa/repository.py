@@ -6,23 +6,19 @@ from typing import Any
 from psycopg.rows import dict_row
 from psycopg_pool import AsyncConnectionPool
 
+from oraculo_ai.core.db import get_pool
+
 
 class ProjectRepository:
-    def __init__(self, dsn: str) -> None:
-        self._dsn = dsn
-        self._pool: AsyncConnectionPool | None = None
+    def __init__(self, pool: AsyncConnectionPool | None = None) -> None:
+        self._pool: AsyncConnectionPool | None = pool
 
     async def open(self) -> None:
-        if self._pool is not None:
-            return
-        pool = AsyncConnectionPool(self._dsn, min_size=1, max_size=2, open=False)
-        await pool.open()
-        self._pool = pool
+        if self._pool is None:
+            self._pool = get_pool()
 
     async def close(self) -> None:
-        if self._pool is not None:
-            await self._pool.close()
-            self._pool = None
+        return None
 
     async def __aenter__(self) -> "ProjectRepository":
         await self.open()
@@ -39,7 +35,7 @@ class ProjectRepository:
     @property
     def _ensured_pool(self) -> AsyncConnectionPool:
         if self._pool is None:
-            raise RuntimeError("ProjectRepository pool not open; call await repo.open() first")
+            raise RuntimeError("ProjectRepository not opened; call await repo.open() first")
         return self._pool
 
     async def list_active_recent(self, limit: int = 10) -> list[dict[str, Any]]:

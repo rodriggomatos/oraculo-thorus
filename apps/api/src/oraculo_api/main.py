@@ -10,6 +10,7 @@ from psycopg.rows import dict_row
 from psycopg_pool import AsyncConnectionPool
 
 from oraculo_ai.core.config import get_settings
+from oraculo_ai.core.db import close_db, init_db
 from oraculo_ai.llm.client import shutdown_traces
 
 from oraculo_api.routes import health, projects, query
@@ -18,6 +19,9 @@ from oraculo_api.routes import health, projects, query
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
+
+    await init_db(settings.database_url, pool_size=5)
+
     async with AsyncConnectionPool(
         conninfo=settings.database_url,
         max_size=20,
@@ -26,14 +30,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             "prepare_threshold": 0,
             "row_factory": dict_row,
         },
-    ) as pool:
-        checkpointer = AsyncPostgresSaver(conn=pool)
+    ) as checkpointer_pool:
+        checkpointer = AsyncPostgresSaver(conn=checkpointer_pool)
         await checkpointer.setup()
         app.state.checkpointer = checkpointer
         try:
             yield
         finally:
             shutdown_traces()
+            await close_db()
 
 
 app = FastAPI(

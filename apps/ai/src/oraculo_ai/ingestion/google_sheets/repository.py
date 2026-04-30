@@ -12,29 +12,23 @@ from psycopg.types.json import Json
 from psycopg_pool import AsyncConnectionPool
 from sqlalchemy import text
 from sqlalchemy.exc import ProgrammingError
-from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncEngine
 
-from oraculo_ai.core.config import get_settings
+from oraculo_ai.core.db import get_engine, get_pool
 from oraculo_ai.ingestion.google_sheets.vector_store import make_vector_store
 from oraculo_ai.ingestion.schema import Definition
 
 
 class SheetsRepository:
-    def __init__(self, dsn: str) -> None:
-        self._dsn = dsn
-        self._pool: AsyncConnectionPool | None = None
+    def __init__(self, pool: AsyncConnectionPool | None = None) -> None:
+        self._pool: AsyncConnectionPool | None = pool
 
     async def open(self) -> None:
-        if self._pool is not None:
-            return
-        pool = AsyncConnectionPool(self._dsn, min_size=1, max_size=4, open=False)
-        await pool.open()
-        self._pool = pool
+        if self._pool is None:
+            self._pool = get_pool()
 
     async def close(self) -> None:
-        if self._pool is not None:
-            await self._pool.close()
-            self._pool = None
+        return None
 
     async def __aenter__(self) -> "SheetsRepository":
         await self.open()
@@ -51,7 +45,7 @@ class SheetsRepository:
     @property
     def _ensured_pool(self) -> AsyncConnectionPool:
         if self._pool is None:
-            raise RuntimeError("repository pool not open; call await repo.open() first")
+            raise RuntimeError("SheetsRepository not opened; call await repo.open() first")
         return self._pool
 
     async def get_project_by_number(self, project_number: int) -> dict[str, Any] | None:
@@ -109,7 +103,7 @@ class SheetsRepository:
                 row = await cur.fetchone()
                 if row is None:
                     raise RuntimeError("upsert_definition returned no row")
-                return row[0], bool(row[1])
+                return row["id"], bool(row["inserted"])
 
     async def insert_definition_version(self, definition: Definition) -> UUID:
         sql = """
@@ -137,26 +131,22 @@ class SheetsRepository:
                 row = await cur.fetchone()
                 if row is None:
                     raise RuntimeError("insert_definition_version returned no row")
-                return row[0]
+                return row["id"]
 
 
 class ChunksVectorStore:
-    def __init__(self) -> None:
-        self._engine: AsyncEngine | None = None
+    def __init__(self, async_engine: AsyncEngine | None = None) -> None:
+        self._engine: AsyncEngine | None = async_engine
         self._vector_store: PGVectorStore | None = None
 
     async def open(self) -> None:
         if self._vector_store is not None:
             return
-        settings = get_settings()
-        async_dsn = settings.database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
-        self._engine = create_async_engine(async_dsn)
+        if self._engine is None:
+            self._engine = get_engine()
         self._vector_store = make_vector_store()
 
     async def close(self) -> None:
-        if self._engine is not None:
-            await self._engine.dispose()
-            self._engine = None
         self._vector_store = None
 
     async def __aenter__(self) -> "ChunksVectorStore":

@@ -4,6 +4,8 @@ import argparse
 import asyncio
 import sys
 
+from oraculo_ai.core.config import get_settings
+from oraculo_ai.core.db import close_db, init_db
 from oraculo_ai.ingestion.google_sheets.pipeline import run_ingestion
 from oraculo_ai.llm.client import shutdown_traces
 
@@ -22,6 +24,15 @@ async def _run(project_number: int, sheet_name: str) -> None:
     print(f"Chunks updated:         {stats.chunks_updated}")
     print(f"Chunks unchanged:       {stats.chunks_unchanged}")
     print(f"Embedding calls:        {stats.embedding_calls}")
+
+
+async def _amain(project_number: int, sheet_name: str) -> None:
+    settings = get_settings()
+    await init_db(settings.database_url, pool_size=3)
+    try:
+        await _run(project_number, sheet_name)
+    finally:
+        await close_db()
 
 
 def main() -> None:
@@ -48,7 +59,7 @@ def main() -> None:
     args = parser.parse_args()
 
     try:
-        asyncio.run(_run(project_number=args.project_number, sheet_name=args.sheet_name))
+        asyncio.run(_amain(project_number=args.project_number, sheet_name=args.sheet_name))
     finally:
         shutdown_traces()
 

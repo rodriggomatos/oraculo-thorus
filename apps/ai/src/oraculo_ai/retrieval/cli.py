@@ -4,6 +4,8 @@ import argparse
 import asyncio
 import sys
 
+from oraculo_ai.core.config import get_settings
+from oraculo_ai.core.db import close_db, init_db
 from oraculo_ai.llm.client import shutdown_traces
 from oraculo_ai.retrieval.schema import SearchQuery
 from oraculo_ai.retrieval.search import search
@@ -30,6 +32,15 @@ async def _run(query_text: str, project_number: int, top_k: int) -> None:
         print(f"[{idx}] score={result.score:.4f}  {item_code}")
         print(f"    {snippet}")
         print()
+
+
+async def _amain(query_text: str, project_number: int, top_k: int) -> None:
+    settings = get_settings()
+    await init_db(settings.database_url, pool_size=3)
+    try:
+        await _run(query_text, project_number, top_k)
+    finally:
+        await close_db()
 
 
 def main() -> None:
@@ -59,7 +70,7 @@ def main() -> None:
     args = parser.parse_args()
 
     try:
-        asyncio.run(_run(args.query, args.project_number, args.top_k))
+        asyncio.run(_amain(args.query, args.project_number, args.top_k))
     finally:
         shutdown_traces()
 

@@ -3,7 +3,6 @@
 from fastapi import APIRouter
 
 from oraculo_ai.agents.qa.repository import ProjectRepository
-from oraculo_ai.core.config import get_settings
 
 from oraculo_api.schemas.projects import ProjectDTO
 
@@ -13,8 +12,7 @@ router = APIRouter()
 
 @router.get("/projects", response_model=list[ProjectDTO])
 async def list_projects() -> list[ProjectDTO]:
-    settings = get_settings()
-    async with ProjectRepository(settings.database_url) as repo:
+    async with ProjectRepository() as repo:
         rows = await repo.list_active_recent(limit=50)
     return [
         ProjectDTO(

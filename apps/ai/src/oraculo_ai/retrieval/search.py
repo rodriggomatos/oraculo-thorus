@@ -10,7 +10,6 @@ from llama_index.core.vector_stores import (
     MetadataFilters,
 )
 
-from oraculo_ai.core.config import get_settings
 from oraculo_ai.ingestion.google_sheets.repository import SheetsRepository
 from oraculo_ai.ingestion.google_sheets.vector_store import make_vector_store
 from oraculo_ai.retrieval.schema import ChunkResult, SearchQuery
@@ -18,9 +17,7 @@ from oraculo_ai.retrieval.schema import ChunkResult, SearchQuery
 
 @observe(as_type="retriever", name="vector-search")
 async def search(query: SearchQuery) -> list[ChunkResult]:
-    settings = get_settings()
-
-    async with SheetsRepository(settings.database_url) as repo:
+    async with SheetsRepository() as repo:
         project = await repo.get_project_by_number(query.project_number)
         if project is None:
             raise RuntimeError(

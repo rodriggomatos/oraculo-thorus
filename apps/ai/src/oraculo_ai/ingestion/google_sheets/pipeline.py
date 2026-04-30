@@ -31,7 +31,7 @@ async def run_ingestion(
     registered_at = datetime.now(timezone.utc).isoformat()
 
     async with (
-        SheetsRepository(settings.database_url) as repo,
+        SheetsRepository() as repo,
         ChunksVectorStore() as chunks_store,
     ):
         project = await repo.get_project_by_number(project_number)
@@ -125,12 +125,11 @@ async def register_definition_version(
     fonte_descricao: str,
     data_informacao: date | None = None,
 ) -> dict[str, Any]:
-    settings = get_settings()
     effective_date = data_informacao or date.today()
     registered_at = datetime.now(timezone.utc).isoformat()
 
     async with (
-        SheetsRepository(settings.database_url) as repo,
+        SheetsRepository() as repo,
         ChunksVectorStore() as chunks_store,
     ):
         project = await repo.get_project_by_number(project_number)

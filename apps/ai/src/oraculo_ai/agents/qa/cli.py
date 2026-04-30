@@ -7,6 +7,8 @@ from uuid import uuid4
 
 from oraculo_ai.agents.qa.agent import answer_question
 from oraculo_ai.agents.qa.schema import QAQuery
+from oraculo_ai.core.config import get_settings
+from oraculo_ai.core.db import close_db, init_db
 from oraculo_ai.llm.client import shutdown_traces
 
 
@@ -38,6 +40,20 @@ async def _run(
     for idx, src in enumerate(answer.sources, start=1):
         tipo_part = f" - {src.tipo}" if src.tipo else ""
         print(f"[{idx}] Item {src.item_code} - {src.disciplina}{tipo_part} - score {src.score:.2f}")
+
+
+async def _amain(
+    question: str,
+    project_number: int | None,
+    top_k: int,
+    thread_id: str,
+) -> None:
+    settings = get_settings()
+    await init_db(settings.database_url, pool_size=3)
+    try:
+        await _run(question, project_number, top_k, thread_id)
+    finally:
+        await close_db()
 
 
 def main() -> None:
@@ -76,7 +92,7 @@ def main() -> None:
     thread_id = args.thread_id or str(uuid4())
 
     try:
-        asyncio.run(_run(args.question, args.project_number, args.top_k, thread_id))
+        asyncio.run(_amain(args.question, args.project_number, args.top_k, thread_id))
     finally:
         shutdown_traces()
 
