@@ -5,7 +5,6 @@ from datetime import date
 from langchain_core.tools import tool
 
 from oraculo_ai.agents.qa.repository import ProjectRepository
-from oraculo_ai.core.config import get_settings
 from oraculo_ai.ingestion.google_sheets.pipeline import register_definition_version
 from oraculo_ai.retrieval.schema import SearchQuery
 from oraculo_ai.retrieval.search import search
@@ -51,8 +50,7 @@ async def search_definitions(
 @tool
 async def list_projects() -> list[dict]:
     """Lista os 10 projetos ativos mais recentes do sistema. Use quando o usuário não especificar projeto e você precisar mostrar opções."""
-    settings = get_settings()
-    async with ProjectRepository(settings.database_url) as repo:
+    async with ProjectRepository() as repo:
         rows = await repo.list_active_recent(limit=10)
     return [
         {
@@ -71,8 +69,7 @@ async def find_project_by_name(name_or_term: str) -> list[dict]:
     Args:
         name_or_term: Nome do projeto, cliente ou termo a buscar.
     """
-    settings = get_settings()
-    async with ProjectRepository(settings.database_url) as repo:
+    async with ProjectRepository() as repo:
         rows = await repo.search_by_term(term=name_or_term, limit=5)
     return [
         {

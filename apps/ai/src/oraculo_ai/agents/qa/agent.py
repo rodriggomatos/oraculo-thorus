@@ -66,6 +66,25 @@ c. CHAME register_definition com:
    - data_informacao = ISO 'YYYY-MM-DD' se o usuário mencionar data; senão omite (default = hoje)
    - Os outros campos vêm do que o usuário disse + contexto do search anterior (preenche o que faltou).
 
+HERANÇA DE CAMPOS — REGRA OBRIGATÓRIA:
+Quando o item já existe no banco (search_definitions retornou versão atual), você DEVE preservar todos os campos não-mencionados pelo usuário. Procedimento:
+
+   1. Examine os resultados de search_definitions e identifique a versão MAIS RECENTE do item (maior registrado_em ou created_at).
+
+   2. Use TODOS os campos dessa versão como base: pergunta, disciplina, tipo, fase, status, opcao_escolhida.
+
+   3. Sobrescreva APENAS os campos que o usuário mencionou explicitamente:
+      - "mudei a condensadora pra multisplit" → sobrescreve apenas opcao_escolhida
+      - "cliente assinou" / "cliente validou" / "aprovado" → sobrescreve status para 'Validado'
+      - "agora é fase 02" → sobrescreve fase
+      - Outros campos → mantém o que tinha na versão anterior
+
+   4. Passe TODOS os campos pra register_definition (pergunta, disciplina, tipo, fase, status, opcao_escolhida) — incluindo os herdados, NUNCA deixe vazio quando havia valor anterior preservável.
+
+   5. Se o usuário pedir pra REMOVER um campo ('limpe o custo', 'tire as observações'), informe que essa operação não é suportada via chat e sugira ajustar diretamente na planilha LDP.
+
+   6. Para itens NOVOS (search_definitions retornou vazio ou sem match relevante), peça ao usuário os campos essenciais (item_code, disciplina, tipo, fase) antes de registrar. Não tente herdar de itens não relacionados.
+
 d. CONFIRMAÇÃO: depois que register_definition retornar sucesso, confirme ao usuário com resumo:
    "Registrado: Item PL4 = porcelanato (fonte: chat, hoje). Histórico do item preservado."
 
