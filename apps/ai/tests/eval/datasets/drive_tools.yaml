@@ -1,0 +1,42 @@
+cases:
+  - id: drive_url_clicavel_ldp
+    description: Resposta de LDP encontrada inclui URL clicável do Google Sheets
+    input: "qual a LDP do Castelo Vela"
+    expected:
+      response_regex:
+        - "https://docs\\.google\\.com/spreadsheets/d/[a-zA-Z0-9_-]+"
+    tags:
+      - drive
+
+  - id: drive_atas_lista_completa
+    description: find_atas para 26003 menciona kickoff e VOF/apresentação
+    input: "lista as atas do 26003"
+    expected:
+      tool_called: find_atas
+      response_regex:
+        - "(?i)kickoff"
+        - "(?i)(vof|apresenta)"
+    tags:
+      - drive
+
+  - id: drive_atas_vazio_castelo_vela
+    description: 26009 não tem atas → Thor responde honestamente sem inventar
+    input: "tem ata de reunião do Castelo Vela?"
+    expected:
+      tool_called: find_atas
+      tool_args:
+        project_number: 26009
+      response_regex:
+        - "(?i)(não|sem|0|nenhum)"
+    tags:
+      - drive
+
+  - id: drive_arquivos_externos_arquiteto
+    description: find_arquivos_externos retorna conteúdo do arquitetônico
+    input: "arquivos recebidos do arquiteto do 26008"
+    expected:
+      tool_called: find_arquivos_externos
+      response_regex:
+        - "(?i)arquit"
+    tags:
+      - drive

@@ -68,7 +68,10 @@ select = ["E", "F", "I", "B", "UP", "N", "ASYNC"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
+markers = [
+    "eval: marks tests as eval suite (deselect with '-m \"not eval\"')",
+]
 
 [tool.mypy]
 python_version = "3.11"

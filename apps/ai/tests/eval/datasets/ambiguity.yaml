@@ -1,0 +1,32 @@
+cases:
+  - id: ambiguity_castelo_dois_projetos
+    description: 'Castelo sem qualifier deve listar as duas opcoes (Gard 26008 e Vela 26009)'
+    input: "qual a LDP do Castelo"
+    expected:
+      response_contains:
+        - "26008"
+        - "26009"
+      response_NOT_contains:
+        - "https://docs.google.com/spreadsheets"
+    tags:
+      - ambiguity
+
+  - id: ambiguity_projeto_novo_sem_contexto
+    description: 'projeto novo em conversa nova: pede esclarecimento de qual projeto'
+    input: "manda a planilha do projeto novo"
+    expected:
+      response_regex:
+        - "(?i)(qual projeto|qual deles|qual é|preciso identificar|preciso saber|precisa.*especific|me informar)"
+      response_NOT_contains:
+        - "https://docs.google.com/spreadsheets"
+    tags:
+      - ambiguity
+
+  - id: ambiguity_planilha_sem_projeto
+    description: 'manda a planilha sem projeto: pede contexto, nao chuta'
+    input: "manda a planilha"
+    expected:
+      response_regex:
+        - "(?i)(qual projeto|qual deles|qual é|de qual|preciso identificar|preciso saber|me informar|me diga|especific)"
+    tags:
+      - ambiguity

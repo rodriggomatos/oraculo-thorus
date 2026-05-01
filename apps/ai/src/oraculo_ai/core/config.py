@@ -17,9 +17,9 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
-    llm_provider: str = "groq"
-    llm_model_fast: str = "groq/llama-3.3-70b-versatile"
-    llm_model_smart: str = "groq/llama-3.3-70b-versatile"
+    llm_provider: str = "anthropic"
+    llm_model_fast: str = "anthropic/claude-haiku-4-5"
+    llm_model_smart: str = "anthropic/claude-sonnet-4-6"
     groq_api_key: str = ""
     anthropic_api_key: str | None = None
 
