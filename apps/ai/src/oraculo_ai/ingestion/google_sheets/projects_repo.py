@@ -50,7 +50,7 @@ class ProjectsWriter:
                 await cur.execute(
                     """
                     INSERT INTO projects (project_number, name, client, google_sheet_id, status)
-                    VALUES (%s, %s, %s, %s, 'ativo')
+                    VALUES (%s, %s, %s, %s, 'active')
                     ON CONFLICT (project_number) DO UPDATE SET
                         name = EXCLUDED.name,
                         client = EXCLUDED.client,
