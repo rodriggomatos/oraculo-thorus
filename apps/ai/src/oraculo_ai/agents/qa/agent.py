@@ -10,6 +10,7 @@ from langfuse import get_client, observe
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.checkpoint.memory import InMemorySaver
 
+from oraculo_ai.agents.qa.mcp_client import get_drive_tools
 from oraculo_ai.agents.qa.schema import Citation, QAAnswer, QAQuery
 from oraculo_ai.agents.qa.tools import (
     find_project_by_name,
@@ -96,7 +97,40 @@ RESPOSTA (modo busca, com histórico):
 - NUNCA invente informações.
 - Português brasileiro, profissional e direto.
 - Destaque 'Opção escolhida' quando houver no chunk.
-- Mencione 'Status: Em análise' ou 'Validado: não' quando aplicável."""
+- Mencione 'Status: Em análise' ou 'Validado: não' quando aplicável.
+
+DRIVE AWARENESS (tools opcionais — só use quando o usuário pedir explicitamente arquivo, link, ata, VOF ou material recebido de terceiros):
+
+- find_lista_definicoes(project_number) — devolve a URL da LDP do projeto, com status tri-state (FOUND/UNCERTAIN/NOT_FOUND)
+- find_atas(project_number) — lista atas de reunião com URLs
+- find_vof_revisoes(project_number, discipline?, only_approved?) — lista VOFs (use only_approved=true pra "aprovado"/"validado")
+- find_arquivos_externos(project_number, source?) — arquivos recebidos de terceiros (use source pra filtrar: 'arquiteto', 'arquitetonico', 'estrutural', 'recebido', etc.)
+- list_project_files(project_number, category?, discipline?, has_status?) — genérica, use quando os outros não couberem
+
+Quando usar uma dessas tools, RESUMA os achados em prosa e CITE o(s) link(s) clicáveis (web_view_link). Não jogue o JSON cru pro usuário.
+
+INTERPRETAÇÃO DO STATUS DE find_lista_definicoes:
+
+- status="found" → tem LDP confirmada. Responda com a URL diretamente.
+- status="not_found" → pasta DEFINIÇÕES inexistente ou vazia. Responda claramente: "O projeto X não tem Lista de Definições cadastrada no Drive."
+- status="uncertain" → NÃO afirme que tem LDP. Comunique a dúvida usando os campos `found_files` (o que tava na pasta) e `uncertainty_reason` (porque ficou em dúvida). Exemplos:
+  - "Não consegui confirmar a LDP do projeto X. Encontrei [arquivos], mas [razão da dúvida]. Pode me dizer onde está a lista de definições oficial?"
+  - "A pasta DEFINIÇÕES do projeto X tem [arquivo Y] junto com 'Consulte o Asana' — pode ser que a LDP esteja no Asana, não no Drive. Quer que eu verifique algo específico?"
+
+LDP — RECOMENDAÇÃO DE PADRONIZAÇÃO (obrigatória quando status=UNCERTAIN):
+
+Sempre que find_lista_definicoes retornar status UNCERTAIN, encerre a resposta com uma recomendação clara de padronização. Tom: profissional e direto, sem suavizar. Estrutura sugerida:
+
+"**Recomendação de padronização**: pra evitar ambiguidades futuras, considere alinhar com a equipe qual canal é oficial. Se a fonte de verdade for [opção A identificada — ex: a planilha do Drive], considere [ação concreta — ex: remover o arquivo Consulte o Asana.txt]. Se for [opção B — ex: o Asana], considere [ação concreta — ex: mover a planilha pra 03 OBSOLETOS]. Manter ambos os canais gera retrabalho pra equipe e dúvida em ferramentas como esta."
+
+Adapte o conteúdo ao caso concreto:
+- Se há .gsheet com nome padrão + Consulte o Asana → recomende escolher entre Sheets OU Asana como fonte oficial
+- Se há .gsheet sem nome padrão (ex: nome do projeto sem "Lista de definição") → recomende renomear pra seguir a convenção "Lista de definição - R<XX>"
+- Se há vários sinais conflitantes → liste as opções e peça alinhamento explícito
+
+NÃO inclua a recomendação quando status=FOUND ou status=NOT_FOUND. Apenas UNCERTAIN gera recomendação.
+
+NÃO use tools de Drive pra responder perguntas técnicas sobre definições — pra isso, use search_definitions normalmente. Drive tools são pra DESCOBRIR arquivos/links."""
 
 
 _NEGATIVE_PHRASES: tuple[str, ...] = (
@@ -123,9 +157,17 @@ async def answer_question(
         api_key=_resolve_api_key(settings.llm_model_smart, settings),
     )
 
+    drive_tools = await get_drive_tools()
+
     agent = create_agent(
         model=llm,
-        tools=[search_definitions, list_projects, find_project_by_name, register_definition],
+        tools=[
+            search_definitions,
+            list_projects,
+            find_project_by_name,
+            register_definition,
+            *drive_tools,
+        ],
         system_prompt=_SYSTEM_PROMPT,
         checkpointer=checkpointer if checkpointer is not None else _checkpointer,
     )
