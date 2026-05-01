@@ -19,7 +19,7 @@ class Definition(BaseModel):
     status: str | None = None
     custo: str | None = None
     observacoes: str | None = None
-    validado: bool = False
+    validado: bool | None = None
     informacao_auxiliar: str | None = None
     apoio_1: str | None = None
     apoio_2: str | None = None
@@ -29,6 +29,7 @@ class Definition(BaseModel):
     data_informacao: date | None = None
     fonte_informacao: str | None = None
     fonte_descricao: str | None = None
+    source_document_id: UUID | None = None
 
 
 class IngestionStats(BaseModel):

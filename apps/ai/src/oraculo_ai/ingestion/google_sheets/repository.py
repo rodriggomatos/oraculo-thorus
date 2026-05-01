@@ -65,13 +65,15 @@ class SheetsRepository:
             opcao_escolhida, status, custo, observacoes, validado,
             informacao_auxiliar, apoio_1, apoio_2,
             source_sheet_id, source_row, raw_data,
-            data_informacao, fonte_informacao, fonte_descricao
+            data_informacao, fonte_informacao, fonte_descricao,
+            source_document_id
         ) VALUES (
             %(project_id)s, %(disciplina)s, %(tipo)s, %(fase)s, %(item_code)s, %(pergunta)s,
             %(opcao_escolhida)s, %(status)s, %(custo)s, %(observacoes)s, %(validado)s,
             %(informacao_auxiliar)s, %(apoio_1)s, %(apoio_2)s,
             %(source_sheet_id)s, %(source_row)s, %(raw_data)s,
-            %(data_informacao)s, %(fonte_informacao)s, %(fonte_descricao)s
+            %(data_informacao)s, %(fonte_informacao)s, %(fonte_descricao)s,
+            %(source_document_id)s
         )
         ON CONFLICT (project_id, item_code) WHERE fonte_informacao = 'lista_definicoes_inicial' DO UPDATE SET
             disciplina = EXCLUDED.disciplina,
@@ -112,13 +114,15 @@ class SheetsRepository:
             opcao_escolhida, status, custo, observacoes, validado,
             informacao_auxiliar, apoio_1, apoio_2,
             source_sheet_id, source_row, raw_data,
-            data_informacao, fonte_informacao, fonte_descricao
+            data_informacao, fonte_informacao, fonte_descricao,
+            source_document_id
         ) VALUES (
             %(project_id)s, %(disciplina)s, %(tipo)s, %(fase)s, %(item_code)s, %(pergunta)s,
             %(opcao_escolhida)s, %(status)s, %(custo)s, %(observacoes)s, %(validado)s,
             %(informacao_auxiliar)s, %(apoio_1)s, %(apoio_2)s,
             %(source_sheet_id)s, %(source_row)s, %(raw_data)s,
-            %(data_informacao)s, %(fonte_informacao)s, %(fonte_descricao)s
+            %(data_informacao)s, %(fonte_informacao)s, %(fonte_descricao)s,
+            %(source_document_id)s
         )
         RETURNING id
         """

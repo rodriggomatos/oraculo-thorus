@@ -31,6 +31,11 @@ dependencies = [
     "google-auth>=2.30.0,<3.0.0",
     "google-api-python-client>=2.140.0,<3.0.0",
     "pyyaml>=6.0.0,<7.0.0",
+    "anthropic>=0.97.0,<1.0.0",
+    "instructor>=1.15.0,<2.0.0",
+    "mammoth>=1.12.0,<2.0.0",
+    "openpyxl>=3.1.5,<4.0.0",
+    "pypdf>=6.10.0,<7.0.0",
 ]
 
 [dependency-groups]
