@@ -2,18 +2,20 @@
 
 import { useChat } from "@/hooks/useChat";
 import { ChatWindow } from "./ChatWindow";
-import { Sidebar } from "./Sidebar";
+import Sidebar from "./Sidebar";
 
 export function ChatLayout(): React.ReactElement {
   const chat = useChat();
 
   return (
-    <div className="flex h-screen bg-white">
+    <div className="flex h-screen bg-[var(--main-bg)] text-[var(--sidebar-text)]">
       <Sidebar
-        threads={chat.threads}
-        currentThreadId={chat.threadId}
-        onSwitch={chat.switchThread}
-        onNew={chat.newThread}
+        threads={chat.threads.map((t) => ({ id: t.thread_id, title: t.titulo }))}
+        activeThreadId={chat.threadId}
+        user={{ name: "Rodrigo Matos", initials: "RM" }}
+        onSelect={chat.switchThread}
+        onNewChat={chat.newThread}
+        onRename={chat.renameThread}
         onDelete={chat.deleteThread}
       />
       <ChatWindow

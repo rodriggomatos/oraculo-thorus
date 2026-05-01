@@ -14,8 +14,8 @@ export function Message({
   if (message.role === "user") {
     return (
       <div className="flex justify-end">
-        <div className="bg-blue-50 border border-blue-100 rounded-lg px-4 py-2.5 max-w-[75%]">
-          <p className="whitespace-pre-wrap text-sm text-zinc-800">
+        <div className="bg-[var(--sidebar-popover-bg)] rounded-2xl px-4 py-2.5 max-w-[75%]">
+          <p className="whitespace-pre-wrap text-sm text-[var(--sidebar-text)]">
             {message.content}
           </p>
         </div>
@@ -26,8 +26,8 @@ export function Message({
   return (
     <div className="flex justify-start">
       <div className="flex flex-col gap-2 max-w-[75%]">
-        <div className="bg-white border border-zinc-200 rounded-lg px-4 py-3">
-          <div className="prose prose-sm prose-zinc max-w-none">
+        <div className="px-1 py-1">
+          <div className="prose prose-sm prose-invert max-w-none text-[var(--sidebar-text)]">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {message.content}
             </ReactMarkdown>

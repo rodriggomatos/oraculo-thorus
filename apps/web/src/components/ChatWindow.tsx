@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { ArrowUp, FolderOpen, ListTodo, Plus, Search } from "lucide-react";
 import { Message as MessageComponent } from "./Message";
 import { ThinkingIndicator } from "./ThinkingIndicator";
 import type { Message } from "@/lib/types";
@@ -16,8 +15,33 @@ type Props = {
 };
 
 
+type Suggestion = {
+  icon: React.ReactNode;
+  label: string;
+  prompt: string;
+};
+
+
+const SUGGESTIONS: Suggestion[] = [
+  {
+    icon: <FolderOpen className="h-4 w-4 text-[var(--sidebar-text-muted)]" />,
+    label: "Listar projetos",
+    prompt: "Quais projetos temos cadastrados?",
+  },
+  {
+    icon: <Search className="h-4 w-4 text-[var(--sidebar-text-muted)]" />,
+    label: "Buscar definição",
+    prompt: "Qual o material da tubulação de gás @26002?",
+  },
+  {
+    icon: <ListTodo className="h-4 w-4 text-[var(--sidebar-text-muted)]" />,
+    label: "Definições pendentes",
+    prompt: "Quais definições estão pendentes em @26002?",
+  },
+];
+
+
 export function ChatWindow({
-  threadId,
   messages,
   isLoading,
   onSend,
@@ -50,60 +74,88 @@ export function ChatWindow({
     await onSend(trimmed);
   };
 
-  const headerTitle =
-    threadId && messages.length > 0 ? "Conversa" : "Nova conversa";
+  const fillSuggestion = (prompt: string): void => {
+    setValue(prompt);
+    textareaRef.current?.focus();
+  };
+
+  const isEmpty = messages.length === 0 && !isLoading;
+
+  const pillInput = (
+    <div className="flex items-end gap-2 w-full rounded-3xl bg-[var(--sidebar-popover-bg)] px-3 py-2">
+      <button
+        type="button"
+        aria-label="Anexar"
+        className="p-2 rounded-full text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text)] hover:bg-[var(--sidebar-hover)] shrink-0 transition-colors"
+      >
+        <Plus className="h-5 w-5" />
+      </button>
+      <textarea
+        ref={textareaRef}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            void handleSubmit();
+          }
+        }}
+        placeholder="Pergunte alguma coisa"
+        className="flex-1 bg-transparent text-[var(--sidebar-text)] placeholder:text-[var(--sidebar-text-muted)] outline-none resize-none min-h-[28px] max-h-[200px] py-2 self-center"
+        rows={1}
+        disabled={isLoading}
+      />
+      <button
+        type="button"
+        onClick={() => void handleSubmit()}
+        disabled={!value.trim() || isLoading}
+        aria-label="Enviar"
+        className="p-2 rounded-full bg-white text-zinc-900 hover:bg-zinc-200 disabled:bg-[var(--sidebar-active)] disabled:text-[var(--sidebar-text-muted)] shrink-0 transition-colors"
+      >
+        <ArrowUp className="h-4 w-4" />
+      </button>
+    </div>
+  );
 
   return (
-    <main className="flex-1 flex flex-col">
-      <header className="border-b border-zinc-200 px-6 py-4">
-        <h1 className="text-base font-semibold text-zinc-800">{headerTitle}</h1>
-      </header>
-
-      <div
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto px-6 py-4 space-y-4"
-      >
-        {messages.length === 0 && !isLoading && (
-          <div className="flex flex-col items-center justify-center h-full text-center text-zinc-500">
-            <p className="text-lg font-medium text-zinc-700">
-              Pergunte ao Thor sobre seus projetos
-            </p>
-            <p className="text-sm mt-2">
-              Exemplo: <span className="font-mono">qual o material do gás @26002</span>
-            </p>
+    <main className="flex-1 flex flex-col bg-[var(--main-bg)] text-[var(--sidebar-text)] overflow-hidden">
+      {isEmpty ? (
+        <div className="flex-1 flex items-center justify-center px-6">
+          <div className="w-full max-w-2xl flex flex-col items-center gap-8">
+            <h1 className="text-3xl font-medium tracking-tight text-[var(--sidebar-text)]">
+              Como posso ajudar?
+            </h1>
+            <div className="w-full">{pillInput}</div>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {SUGGESTIONS.map((s) => (
+                <button
+                  key={s.label}
+                  type="button"
+                  onClick={() => fillSuggestion(s.prompt)}
+                  className="flex items-center gap-2 rounded-full border border-[var(--sidebar-border)] px-3.5 py-2 text-sm text-[var(--sidebar-text)] hover:bg-[var(--sidebar-hover)] transition-colors"
+                >
+                  {s.icon}
+                  <span>{s.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
-        )}
-        {messages.map((m, i) => (
-          <MessageComponent key={i} message={m} />
-        ))}
-        {isLoading && <ThinkingIndicator />}
-      </div>
-
-      <footer className="border-t border-zinc-200 p-4">
-        <div className="flex gap-2 items-end max-w-4xl mx-auto">
-          <Textarea
-            ref={textareaRef}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                void handleSubmit();
-              }
-            }}
-            placeholder="Pergunte algo... (Shift+Enter pra quebra de linha)"
-            className="resize-none min-h-[40px] max-h-[200px] flex-1"
-            rows={1}
-            disabled={isLoading}
-          />
-          <Button
-            onClick={() => void handleSubmit()}
-            disabled={!value.trim() || isLoading}
-          >
-            Enviar
-          </Button>
         </div>
-      </footer>
+      ) : (
+        <>
+          <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 pt-6 pb-4">
+            <div className="max-w-3xl mx-auto space-y-4">
+              {messages.map((m, i) => (
+                <MessageComponent key={i} message={m} />
+              ))}
+              {isLoading && <ThinkingIndicator />}
+            </div>
+          </div>
+          <div className="px-6 pb-4">
+            <div className="max-w-3xl mx-auto">{pillInput}</div>
+          </div>
+        </>
+      )}
     </main>
   );
 }

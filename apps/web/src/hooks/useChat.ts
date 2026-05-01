@@ -8,6 +8,7 @@ import {
   getCurrentThreadId,
   getThread,
   listThreads,
+  renameThread as renameThreadStorage,
   setCurrentThreadId,
   upsertThread,
 } from "@/lib/threads";
@@ -23,6 +24,7 @@ export type UseChatReturn = {
   switchThread: (threadId: string) => void;
   newThread: () => void;
   deleteThread: (threadId: string) => void;
+  renameThread: (threadId: string, newTitle: string) => void;
 };
 
 
@@ -113,6 +115,11 @@ export function useChat(): UseChatReturn {
     [threadId],
   );
 
+  const renameThread = useCallback((tid: string, newTitle: string): void => {
+    renameThreadStorage(tid, newTitle);
+    setThreads(listThreads());
+  }, []);
+
   return {
     threads,
     threadId,
@@ -122,5 +129,6 @@ export function useChat(): UseChatReturn {
     switchThread,
     newThread,
     deleteThread,
+    renameThread,
   };
 }

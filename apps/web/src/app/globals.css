@@ -70,6 +70,18 @@
   --border: oklch(0.92 0.004 286.32);
   --input: oklch(0.92 0.004 286.32);
   --ring: oklch(0.705 0.015 286.067);
+
+  --sidebar-bg: #171717;
+  --main-bg: #212121;
+  --sidebar-text: #ECECEC;
+  --sidebar-text-muted: #8E8EA0;
+  --sidebar-hover: rgba(255, 255, 255, 0.05);
+  --sidebar-active: rgba(255, 255, 255, 0.10);
+  --sidebar-border: rgba(255, 255, 255, 0.06);
+  --sidebar-popover-bg: #2A2B32;
+  --danger-text: #F87171;
+  --danger-hover-text: #FCA5A5;
+  --danger-hover-bg: rgba(239, 68, 68, 0.10);
 }
 
 html,
