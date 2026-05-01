@@ -13,7 +13,7 @@ from oraculo_ai.core.config import get_settings
 from oraculo_ai.core.db import close_db, init_db
 from oraculo_ai.llm.client import shutdown_traces
 
-from oraculo_api.routes import health, projects, query
+from oraculo_api.routes import documents, health, projects, query
 
 
 @asynccontextmanager
@@ -58,3 +58,4 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(query.router)
 app.include_router(projects.router)
+app.include_router(documents.router, tags=["documents"])

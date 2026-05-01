@@ -124,6 +124,13 @@ async def register_definition_version(
     fonte_informacao: str,
     fonte_descricao: str,
     data_informacao: date | None = None,
+    source_document_id: UUID | None = None,
+    custo: str | None = None,
+    observacoes: str | None = None,
+    validado: bool | None = None,
+    informacao_auxiliar: str | None = None,
+    apoio_1: str | None = None,
+    apoio_2: str | None = None,
 ) -> dict[str, Any]:
     effective_date = data_informacao or date.today()
     registered_at = datetime.now(timezone.utc).isoformat()
@@ -148,9 +155,16 @@ async def register_definition_version(
             pergunta=pergunta,
             opcao_escolhida=opcao_escolhida,
             status=status,
+            custo=custo,
+            observacoes=observacoes,
+            validado=validado,
+            informacao_auxiliar=informacao_auxiliar,
+            apoio_1=apoio_1,
+            apoio_2=apoio_2,
             data_informacao=effective_date,
             fonte_informacao=fonte_informacao,
             fonte_descricao=fonte_descricao,
+            source_document_id=source_document_id,
         )
 
         def_id = await repo.insert_definition_version(definition)

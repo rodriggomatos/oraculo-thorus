@@ -43,7 +43,7 @@ class ProjectRepository:
             async with conn.cursor(row_factory=dict_row) as cur:
                 await cur.execute(
                     "SELECT project_number, name, client "
-                    "FROM projects WHERE status = 'ativo' "
+                    "FROM projects WHERE status = 'active' "
                     "ORDER BY updated_at DESC LIMIT %s",
                     (limit,),
                 )

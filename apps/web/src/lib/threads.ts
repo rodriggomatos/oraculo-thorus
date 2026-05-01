@@ -56,6 +56,15 @@ export function deleteThread(threadId: string): void {
   window.localStorage.setItem(THREADS_KEY, JSON.stringify(remaining));
 }
 
+export function renameThread(threadId: string, newTitle: string): void {
+  if (!isBrowser()) return;
+  const all = listThreads();
+  const target = all.find((t) => t.thread_id === threadId);
+  if (!target) return;
+  target.titulo = newTitle.trim() || target.titulo;
+  window.localStorage.setItem(THREADS_KEY, JSON.stringify(all));
+}
+
 export function getCurrentThreadId(): string | null {
   if (!isBrowser()) return null;
   return window.localStorage.getItem(CURRENT_THREAD_KEY);

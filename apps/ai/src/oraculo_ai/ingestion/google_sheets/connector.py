@@ -11,18 +11,22 @@ from googleapiclient.discovery import Resource, build
 _SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
 
 
-def _load_credentials(creds_input: str) -> Credentials:
+def load_credentials(creds_input: str, scopes: list[str]) -> Credentials:
     stripped = creds_input.strip()
     if stripped.startswith("{"):
         info = json.loads(stripped)
-        return Credentials.from_service_account_info(info, scopes=_SCOPES)
+        return Credentials.from_service_account_info(info, scopes=scopes)
 
     path = Path(stripped)
     if not path.is_absolute():
         path = (Path.cwd() / path).resolve()
     if not path.is_file():
         raise FileNotFoundError(f"service account JSON not found at {path}")
-    return Credentials.from_service_account_file(str(path), scopes=_SCOPES)
+    return Credentials.from_service_account_file(str(path), scopes=scopes)
+
+
+def _load_credentials(creds_input: str) -> Credentials:
+    return load_credentials(creds_input, _SCOPES)
 
 
 def build_sheets_service(creds_input: str) -> Resource:

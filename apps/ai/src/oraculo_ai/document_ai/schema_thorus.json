@@ -1,0 +1,1066 @@
+[
+  {
+    "item_code": "1",
+    "disciplina": "Preventivo",
+    "tipo": "Geral",
+    "fase": "1. PL",
+    "pergunta": "Material da tampa do abrigo de mangueiras de hidrante",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "10",
+    "disciplina": "Geral",
+    "tipo": "Apartamento",
+    "fase": "Fase 00",
+    "pergunta": "Altura livre mínima possível do ambiente?",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "100",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Caixa utilizada para interruptor: 4x2",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "101",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Instalação de arandelas nos lavabos e banheiros",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "102",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Posição da iluminação das escadas",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "103",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Pontos de telefonia. Caso tiver algum duplo, mencione em observações",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "104",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Pontos de TV: sala, dormitório e sacada",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "105",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Pontos de TV - altura: 30 + 110cm, eletroduto de 1\"",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "106",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Ponto de interfone, previsto na cozinha",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "107",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Repetidor de Wifi? Se sim, mencione o local em observações",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "108",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Acesso no apartamento: somente campainha, leitor biométrico e TAG. Mencione em observações",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "109",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Dimensão do quadro de dados conforme previsto pelo projetista",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "11",
+    "disciplina": "Geral",
+    "tipo": "Geral",
+    "fase": "Fase 00",
+    "pergunta": "Qual o tipo de fechamento do shaft? Ex: embutido, drywall, alvenaria",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "110",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Posição do quadro de dados, mencione em observações",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "111",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Área comum",
+    "fase": "Fase 01",
+    "pergunta": "Seguirá um padrão de posicionamento dos quadros de energia e telecomunicações",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "112",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Área comum",
+    "fase": "Fase 01",
+    "pergunta": "Qual é o tipo de material dos quadros de distribuição?",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "113",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Área comum",
+    "fase": "Fase 01",
+    "pergunta": "Acesso nos ambientes: leitor biométrico e TAG. Mencione em observações",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "114",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Área comum",
+    "fase": "Fase 01",
+    "pergunta": "Instalações elétricas nos estacionamentos, mencione em observações",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "115",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Área comum",
+    "fase": "Fase 01",
+    "pergunta": "Instalações elétricas nas áreas comuns, mencione em observações",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "116",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Área comum",
+    "fase": "Fase 01",
+    "pergunta": "Infraestrutura de telecom? Se sim, mencione os ambientes em observações",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "117",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Comercial",
+    "fase": "Fase 01",
+    "pergunta": "Infraestrutura de elétrica? Se sim, mencione o nível de entrega em observações",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "118",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Comercial",
+    "fase": "Fase 01",
+    "pergunta": "Infraestrutura de telecom? Se sim, mencione o nível de entrega em observações",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "119",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Geral",
+    "fase": "Fase 01",
+    "pergunta": "Material dos quadros de medição, mencione em observações",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "12",
+    "disciplina": "Geral",
+    "tipo": "Apartamento",
+    "fase": "Fase 00",
+    "pergunta": "Tipo de vedação interna do apartamento",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "120",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Geral",
+    "fase": "Fase 01",
+    "pergunta": "Microgeração de energia na edificação? (Placas fotovoltaicas)",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "121",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Geral",
+    "fase": "Fase 01",
+    "pergunta": "Elevador, mencione a marca em observações",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "122",
+    "disciplina": null,
+    "tipo": null,
+    "fase": null,
+    "pergunta": "",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "123",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Geral",
+    "fase": "Fase 01",
+    "pergunta": "SPDA: Captação",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "124",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Geral",
+    "fase": "Fase 01",
+    "pergunta": "SPDA: Subsistema de descidas",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "125",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Geral",
+    "fase": "Fase 01",
+    "pergunta": "SPDA: Anéis de equipotencialização",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "126",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Geral",
+    "fase": "Fase 01",
+    "pergunta": "SPDA: Material da ligação equipotencialização",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "127",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Geral",
+    "fase": "Fase 01",
+    "pergunta": "SPDA: Subsistema de aterramento",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "128",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Geral",
+    "fase": "Fase 02",
+    "pergunta": "Alimentação dos quadros de distribuição: teto",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "129",
+    "disciplina": "Climatização",
+    "tipo": "Comercial",
+    "fase": "Fase 00",
+    "pergunta": "Qual é o tipo de máquina de evaporadora preferencial para utilização nas salas comercias?",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "13",
+    "disciplina": "Preventivo",
+    "tipo": "Apartamento",
+    "fase": "Fase 00",
+    "pergunta": "Preferência de posição dos aquecedores e respectivas exaustões",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "130",
+    "disciplina": "Climatização",
+    "tipo": "Comercial",
+    "fase": "Fase 00",
+    "pergunta": "Qual é o tipo de máquina de climatização preferencial para utilização nas salas comerciais? (condensadora)",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "14",
+    "disciplina": "Climatização",
+    "tipo": "Área comum",
+    "fase": "Fase 00",
+    "pergunta": "Qual é o tipo de evaporadora preferencial para utilização no lazer?",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "15",
+    "disciplina": "Climatização",
+    "tipo": "Área comum",
+    "fase": "Fase 00",
+    "pergunta": "Qual é o tipo de máquina de climatização preferencial para utilização no lazer? (condensadora)",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "16",
+    "disciplina": "Preventivo",
+    "tipo": "Área comum",
+    "fase": "Fase 00",
+    "pergunta": "Pontos de gás a serem previstos (pontos extras em salão de festas por exemplo)",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "17",
+    "disciplina": "Preventivo",
+    "tipo": "Comercial",
+    "fase": "Fase 00",
+    "pergunta": "Ponto de gás a serem previstos",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "18",
+    "disciplina": "Climatização",
+    "tipo": "Geral",
+    "fase": "Fase 00",
+    "pergunta": "Tem alguma preferência por marca? Se sim, mencione em observações",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "19",
+    "disciplina": "Geral",
+    "tipo": "Geral",
+    "fase": "Fase 00",
+    "pergunta": "Locais com contrapiso? Coloque em observações a altura",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "2",
+    "disciplina": "Preventivo",
+    "tipo": "Geral",
+    "fase": "1. PL",
+    "pergunta": "Hidrante de recalque em abrigo, aparente ou embutido no muro",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "20",
+    "disciplina": "Geral",
+    "tipo": "Geral",
+    "fase": "Fase 00",
+    "pergunta": "Altura mínima livre na garagem? (Legislação da cidade/ Padrão do cliente)",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "21",
+    "disciplina": "Geral",
+    "tipo": "Geral",
+    "fase": "Fase 00",
+    "pergunta": "Tipo de laje da estrutura",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "22",
+    "disciplina": "Climatização",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Haverá coifas? Se sim, padrão 150mm",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "23",
+    "disciplina": "Climatização",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Posição da caixa do ponto de espera da evaporadora, mencione em observações",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "24",
+    "disciplina": "Climatização",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Prever caixa de espera para condensadora na área técnica",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "25",
+    "disciplina": "Preventivo",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Qual é o tipo de material para a rede de SPK e bico?",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "26",
+    "disciplina": "Preventivo",
+    "tipo": "Área comum",
+    "fase": "Fase 01",
+    "pergunta": "Qual é o tipo de material para a rede de SPK e bico?",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "27",
+    "disciplina": "Preventivo",
+    "tipo": "Comercial",
+    "fase": "Fase 01",
+    "pergunta": "Qual é o tipo de material para a rede de SPK e bico?",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "28",
+    "disciplina": "Preventivo",
+    "tipo": "Geral",
+    "fase": "Fase 01",
+    "pergunta": "Material dos eletrodutos de alarme",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "29",
+    "disciplina": "Sanitário",
+    "tipo": "Área comum",
+    "fase": "Fase 00",
+    "pergunta": "Deve ser previsto ralos de limpeza na garagem?",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "3",
+    "disciplina": "Preventivo",
+    "tipo": "Geral",
+    "fase": "1. PL",
+    "pergunta": "Fonte de energia da iluminação de emergência",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "30",
+    "disciplina": "Sanitário",
+    "tipo": "Área comum",
+    "fase": "Fase 00",
+    "pergunta": "Qual formato das caixas de inspeção de drenagem e sanitária?",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "31",
+    "disciplina": "Sanitário",
+    "tipo": "Geral",
+    "fase": "Fase 00",
+    "pergunta": "Haverá aproveitamento de água pluvial?",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "32",
+    "disciplina": "Hidráulica",
+    "tipo": "Geral",
+    "fase": "Fase 00",
+    "pergunta": "Qual é o tipo de reservatório devemos adotar?",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "33",
+    "disciplina": "Hidráulica",
+    "tipo": "Geral",
+    "fase": "Fase 00",
+    "pergunta": "Se for de fibra tem alguma preferência por marca? Se sim, mencione em observações",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "34",
+    "disciplina": "Hidráulica",
+    "tipo": "Apartamento",
+    "fase": "Fase 00",
+    "pergunta": "Qual o tipo de aquecimento da água no apartamento?",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "35",
+    "disciplina": "Hidráulica",
+    "tipo": "Área comum",
+    "fase": "Fase 00",
+    "pergunta": "Qual o tipo de aquecimento da água na área comum?",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "36",
+    "disciplina": "Hidráulica",
+    "tipo": "Área comum",
+    "fase": "Fase 00",
+    "pergunta": "Haverá aquecimento da piscina? Se sim, qual?",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "37",
+    "disciplina": "Hidráulica",
+    "tipo": "Geral",
+    "fase": "Fase 01",
+    "pergunta": "Qual o material prumadas de: água fria (PVC só pode ser utilizado até 75m de altura)",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "38",
+    "disciplina": "Hidráulica",
+    "tipo": "Geral",
+    "fase": "Fase 01",
+    "pergunta": "Qual o material distribuição: água fria",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "39",
+    "disciplina": "Hidráulica",
+    "tipo": "Geral",
+    "fase": "Fase 01",
+    "pergunta": "Qual o material distribuição: água quente",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "4",
+    "disciplina": "Preventivo",
+    "tipo": "Geral",
+    "fase": "1. PL",
+    "pergunta": "Material da tubulação de gás (rede primária e secundária)",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "40",
+    "disciplina": "Hidráulica",
+    "tipo": "Geral",
+    "fase": "Fase 01",
+    "pergunta": "Tipo e marca de válvula redutora de pressão",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "40.a",
+    "disciplina": "Hidráulica",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Como são executadas as tubulações de água quente e água fria na distribuição de teto?",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "41",
+    "disciplina": "Hidráulica",
+    "tipo": "Área comum",
+    "fase": "Fase 01",
+    "pergunta": "Ambientes abastecidos com aproveitamento da água da chuva",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "42",
+    "disciplina": "Hidráulica",
+    "tipo": "Área comum",
+    "fase": "Fase 01",
+    "pergunta": "Ambientes com pontos de aquecimento de água (áreas comuns), mencione em observações",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "43",
+    "disciplina": "Hidráulica",
+    "tipo": "Área comum",
+    "fase": "Fase 01",
+    "pergunta": "Medição individualizada: entrega de hidrômetro",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "44",
+    "disciplina": "Hidráulica",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Posição e registro preferencial nos hidrômetros das unidades: Registro e válvula - antes e depois, mencione em observações",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "45",
+    "disciplina": "Hidráulica",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Prever recirculação de água quente?",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "46",
+    "disciplina": "Hidráulica",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Pontos de aquecimento de água no BANHEIRO (chuveiro, lavatório, banheira, ducha higiênica), mencione em observações",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "46.a",
+    "disciplina": "Hidráulica",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Terá ducha higiênica nos lavabos?",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "46.b",
+    "disciplina": "Hidráulica",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Ducha higiênica somente água fria ou água quente também?",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "47",
+    "disciplina": "Hidráulica",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Pontos de aquecimento de água no LAVABO (lavatório, ducha higiênica), mencione em observações",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "48",
+    "disciplina": "Hidráulica",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Pontos de aquecimento de água na LAVANDERIA (tanque, máquina de lavar roupa), mencione em observações",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "49",
+    "disciplina": "Hidráulica",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Ponto de aquecimento de água na COZINHA (pia, máquina de lavar louças), mencione em observações",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "5",
+    "disciplina": "Preventivo",
+    "tipo": "Geral",
+    "fase": "1. PL",
+    "pergunta": "Material da tubulação da rede de hidrantes",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "50",
+    "disciplina": "Hidráulica",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Ponto de aquecimento de água no PIA CHURRASQUEIRA",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "51",
+    "disciplina": "Hidráulica",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Água fria - registro de gaveta da distribuição em todos os ambientes molhados",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "52",
+    "disciplina": "Hidráulica",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Água quente  - registro de gaveta da distribuição em todos os ambientes molhados, mencione em observações",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "53",
+    "disciplina": "Hidráulica",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Registro de gaveta banheiro",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "54",
+    "disciplina": "Hidráulica",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Registro de gaveta cozinha e área de serviço",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "55",
+    "disciplina": "Hidráulica",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Registro de gaveta: material metálico",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "56",
+    "disciplina": "Hidráulica",
+    "tipo": "Apartamento",
+    "fase": "Fase 02",
+    "pergunta": "Chuveiro: Prever mococomando ou registro misturador?",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "57",
+    "disciplina": "Hidráulica",
+    "tipo": "Apartamento",
+    "fase": "Fase 02",
+    "pergunta": "Posição do registro de acionamento chuveiro",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "58",
+    "disciplina": "Hidráulica",
+    "tipo": "Apartamento",
+    "fase": "Fase 02",
+    "pergunta": "Ponto de água e esgoto - pia cozinha",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "59",
+    "disciplina": "Hidráulica",
+    "tipo": "Apartamento",
+    "fase": "Fase 02",
+    "pergunta": "Ponto de água e esgoto - lavatório",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "6",
+    "disciplina": "Climatização",
+    "tipo": "Apartamento",
+    "fase": "Fase 00",
+    "pergunta": "A infraestrutura de climatização estará incluída na entrega do apartamento",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "60",
+    "disciplina": "Hidráulica",
+    "tipo": "Apartamento",
+    "fase": "Fase 02",
+    "pergunta": "Ponto de água e esgoto - máquina lavar louça",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "61",
+    "disciplina": "Hidráulica",
+    "tipo": "Apartamento",
+    "fase": "Fase 02",
+    "pergunta": "Ponto de água e esgoto - tanque",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "62",
+    "disciplina": "Hidráulica",
+    "tipo": "Apartamento",
+    "fase": "Fase 02",
+    "pergunta": "Ponto de água e esgoto - máquina lavar roupa",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "63",
+    "disciplina": "Hidráulica",
+    "tipo": "Apartamento",
+    "fase": "Fase 02",
+    "pergunta": "Ponto de água - filtro",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "64",
+    "disciplina": "Hidráulica",
+    "tipo": "Apartamento",
+    "fase": "Fase 02",
+    "pergunta": "Ponto de água - geladeira",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "65",
+    "disciplina": "Hidráulica",
+    "tipo": "Apartamento",
+    "fase": "Fase 02",
+    "pergunta": "Ponto de água para banheira - monocomando na parede ou ponto no piso",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "66",
+    "disciplina": "Hidráulica",
+    "tipo": "Apartamento",
+    "fase": "Fase 02",
+    "pergunta": "Altura de ponto de água na parede:",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "67",
+    "disciplina": "Hidráulica",
+    "tipo": "Apartamento",
+    "fase": "Fase 02",
+    "pergunta": "Diâmetro dos pontos de água: 1/2\" ou 3/4\"",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "68",
+    "disciplina": "Hidráulica",
+    "tipo": "Apartamento",
+    "fase": "Fase 02",
+    "pergunta": "Devemos prever abrigo para o ponto da máquina de lavar louças ou prever na parede?",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "69",
+    "disciplina": "Sanitário",
+    "tipo": "Geral",
+    "fase": "Fase 01",
+    "pergunta": "Qual o material: tubulações de esgoto",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "7",
+    "disciplina": "Climatização",
+    "tipo": "Apartamento",
+    "fase": "Fase 00",
+    "pergunta": "Qual é o tipo de evaporadora preferencial para utilização no apartamento?",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "70",
+    "disciplina": "Sanitário",
+    "tipo": "Geral",
+    "fase": "Fase 01",
+    "pergunta": "Qual o material: águas pluviais",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "71",
+    "disciplina": "Sanitário",
+    "tipo": "Geral",
+    "fase": "Fase 01",
+    "pergunta": "Dreno abaixo do abrigo de hidrômetro e hidrantes",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "72",
+    "disciplina": "Sanitário",
+    "tipo": "Geral",
+    "fase": "Fase 01",
+    "pergunta": "Haverá aproveitamento de água pluvial?",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "73",
+    "disciplina": "Sanitário",
+    "tipo": "Área comum",
+    "fase": "Fase 01",
+    "pergunta": "Lazer/ áreas comuns: devem ser previstas caixas sifonadas, ralos lineares ou pontos com grelha? Preencher tamanho da caixa",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "74",
+    "disciplina": "Sanitário",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Prever ralo seco ou caixa sifonada fora do box? Preencher tamanho",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "75",
+    "disciplina": "Sanitário",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Qual a posição do ralo ou caixa fora do box? Ver opções em exemplo",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "76",
+    "disciplina": "Sanitário",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Prever ralo linear ou caixa sifonada dentro do box?",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "77",
+    "disciplina": "Sanitário",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Qual a posição da caixa sifonada dentro do box?",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "78",
+    "disciplina": "Sanitário",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Qual tamanho da caixa sifonada na área de serviço? Preencher tamanho",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "79",
+    "disciplina": "Sanitário",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Caixa sifonada na área de serviço qual a posição? Ver opções exemplo",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "8",
+    "disciplina": "Climatização",
+    "tipo": "Apartamento",
+    "fase": "Fase 00",
+    "pergunta": "Qual é o tipo de máquina de climatização preferencial para utilização no apartamento? (condensadora)",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "80",
+    "disciplina": "Sanitário",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Sacadas: devem ser previstas caixas sifonadas ou ralos lineares? Preencher tamanho da caixa",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "81",
+    "disciplina": "Sanitário",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Lavabo: Qual o tamanho da caixa sifonada? E qual a posição (informar em observações)",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "82",
+    "disciplina": "Sanitário",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Ligar dreno de ar condicionado: em caixa sifonada, ou em prumada própria? Responder em observações",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "83",
+    "disciplina": "Sanitário",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Ramais de ventilação dos banheiros: de prumada ou convencional",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "84",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Área comum",
+    "fase": "Fase 00",
+    "pergunta": "Qual será o tipo de medição?",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "85",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Área comum",
+    "fase": "Fase 00",
+    "pergunta": "Haverá gerador no empreendimento? Se sim, mencione em observações",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "86",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Área comum",
+    "fase": "Fase 00",
+    "pergunta": "Quais cargas serão alimentadas pelo gerador?",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "87",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Área comum",
+    "fase": "Fase 00",
+    "pergunta": "Haverá recarga para carros elétricos? Se sim, descreva o tipo de instalação, mencione em observações",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "88",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Área comum",
+    "fase": "Fase 00",
+    "pergunta": "Qual será a quantidade de carregadores?",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "89",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Área comum",
+    "fase": "Fase 00",
+    "pergunta": "Como será a medição dos carregadores?",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "9",
+    "disciplina": "Geral",
+    "tipo": "Apartamento",
+    "fase": "Fase 00",
+    "pergunta": "Ambientes que possuem forro: área molhada, sacadas, dormitórios, sala estar/jantar",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "90",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Apartamento",
+    "fase": "Fase 00",
+    "pergunta": "Pontos elétricos específicos: chuveiro, torneira elétrica, lava louça e roupa, secadora, toalheiro, persiana, aquecimento de piso,  etc., mencione em observações",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "91",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Qual o local preferencial para posicionamento dos quadros de distribuição?",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "92",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Qual é o tipo de material dos quadros de distribuição?",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "93",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Instalações elétricas nos pavimentos tipo, mencione em observações",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "94",
+    "disciplina": null,
+    "tipo": null,
+    "fase": null,
+    "pergunta": "",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "95",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Seção mínima dos condutores",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "96",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Acionamento dos exaustores da churrasqueira",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "97",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Em caso de alimentação 110V, prever pontos de tomada 220V? Se sim, mencione aonde em observações",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "98",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Instalação de climatização até a condensadora (unidade externa), usar caixa 4x4",
+    "informacao_auxiliar": null
+  },
+  {
+    "item_code": "99",
+    "disciplina": "Elétrico / Comunicação",
+    "tipo": "Apartamento",
+    "fase": "Fase 01",
+    "pergunta": "Ponto de tomada: fogão 60cm; geladeira 60cm",
+    "informacao_auxiliar": null
+  }
+]

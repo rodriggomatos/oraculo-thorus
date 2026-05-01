@@ -45,6 +45,8 @@ class Settings(BaseSettings):
     next_public_supabase_url: str = ""
     next_public_supabase_publishable_key: str = ""
 
+    document_ai_incoming_dir: str = "C:/oraculo-thorus/incoming"
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
