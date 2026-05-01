@@ -1,0 +1,53 @@
+cases:
+  - id: routing_drive_tool_para_localizacao
+    description: Pergunta de localização de arquivo → Drive tool, não RAG
+    input: "onde fica a lista de definições do Embraplan"
+    expected:
+      tool_called: find_lista_definicoes
+      tool_NOT_called: search_definitions
+    tags:
+      - routing
+
+  - id: routing_rag_para_conteudo_tecnico
+    description: Pergunta de conteúdo técnico → search_definitions (RAG), não Drive tool
+    input: "qual o tipo de piso do hall do projeto Embraplan?"
+    expected:
+      tool_called: search_definitions
+      tool_NOT_called: find_lista_definicoes
+    tags:
+      - routing
+
+  - id: routing_atas_drive_tool
+    description: Pergunta sobre atas → find_atas com project_number correto
+    input: "tem ata de reunião do projeto 26003?"
+    expected:
+      tool_called: find_atas
+      tool_args:
+        project_number: 26003
+    tags:
+      - routing
+      - drive
+
+  - id: routing_arquivos_externos
+    description: Arquivos do arquiteto → find_arquivos_externos
+    input: "manda os arquivos recebidos do arquiteto do 26008"
+    expected:
+      tool_called: find_arquivos_externos
+      tool_args:
+        project_number: 26008
+    tags:
+      - routing
+      - drive
+
+  - id: routing_vof_aprovados
+    description: 'Pergunta sobre VOFs aprovados: chama find_vof_revisoes pro 26009. Aceita filtro por tool ou por agrupamento na resposta.'
+    input: "quais VOFs do 26009 estão aprovados tecnicamente e pelo projeto?"
+    expected:
+      tool_called: find_vof_revisoes
+      tool_args:
+        project_number: 26009
+      response_regex:
+        - "(?i)(tec ok|proj ok|aprovad)"
+    tags:
+      - routing
+      - drive

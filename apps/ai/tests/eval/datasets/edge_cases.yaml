@@ -1,0 +1,20 @@
+cases:
+  - id: edge_projeto_inexistente
+    description: Projeto 99999 não existe → resposta honesta, sem URL inventada
+    input: "qual a LDP do projeto 99999"
+    expected:
+      response_NOT_contains:
+        - "https://docs.google.com/spreadsheets"
+      response_regex:
+        - "(?i)(não encontr|não existe|não localiz|não foi)"
+    tags:
+      - edge_case
+
+  - id: edge_pergunta_vazia
+    description: Pergunta extremamente vaga → pede esclarecimento
+    input: "ajuda"
+    expected:
+      response_regex:
+        - "(?i)(o que|como posso|qual|posso ajudar|me diga)"
+    tags:
+      - edge_case

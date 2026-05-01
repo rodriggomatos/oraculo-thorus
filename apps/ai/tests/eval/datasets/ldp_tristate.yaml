@@ -1,0 +1,64 @@
+cases:
+  - id: tristate_uncertain_embraplan
+    description: 26003 tem .gsheet + Consulte o Asana = UNCERTAIN com bloco de recomendação
+    input: "qual a LDP do projeto Embraplan"
+    expected:
+      tool_called: find_lista_definicoes
+      response_contains:
+        - "Embraplan"
+        - "Asana"
+        - "Recomendação de padronização"
+    tags:
+      - tristate
+      - uncertain
+
+  - id: tristate_uncertain_rove_sem_nome_padrao
+    description: 26007 tem .gsheet sem nome padrão = UNCERTAIN sugerindo renomear ou escolher canal
+    input: "qual a LDP do Rove Campeche"
+    expected:
+      tool_called: find_lista_definicoes
+      response_contains:
+        - "Rove"
+        - "Recomendação de padronização"
+      response_regex:
+        - "(?i)(renomear|convenção|nome padrão|padroniz)"
+    tags:
+      - tristate
+      - uncertain
+
+  - id: tristate_found_castelo_vela
+    description: 26009 tem .txt com link limpo = FOUND sem bloco de recomendação
+    input: "qual a LDP do Castelo Vela"
+    expected:
+      tool_called: find_lista_definicoes
+      tool_args:
+        project_number: 26009
+      response_contains:
+        - "https://docs.google.com/spreadsheets"
+      response_NOT_contains:
+        - "Recomendação de padronização"
+    tags:
+      - tristate
+      - found
+
+  - id: tristate_not_found_projeto_inexistente
+    description: Projeto que não existe → resposta honesta sem URL
+    input: "qual a LDP do projeto 99999"
+    expected:
+      response_regex:
+        - "(?i)(não encontr|não existe|não localiz|não foi encontr)"
+      response_NOT_contains:
+        - "https://docs.google.com/spreadsheets"
+    tags:
+      - tristate
+      - not_found
+
+  - id: tristate_quais_projetos_sem_ldp
+    description: Pergunta cross-project menciona estado de incerteza/dúvida explicitamente (gênero flexível)
+    input: "quais projetos não têm LDP confirmada?"
+    expected:
+      response_regex:
+        - "(?i)(uncertain|dúvida|não confirma|incert[ao]|sem confirma|não confirmad)"
+    tags:
+      - tristate
+      - cross_project

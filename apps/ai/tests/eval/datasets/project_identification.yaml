@@ -1,0 +1,44 @@
+cases:
+  - id: identifica_embraplan_por_nome
+    description: Identifica Embraplan como projeto 26003 e dispara find_lista_definicoes
+    input: "qual a LDP do Embraplan"
+    expected:
+      tool_called: find_lista_definicoes
+      tool_args:
+        project_number: 26003
+    tags:
+      - identification
+      - drive
+
+  - id: identifica_castelo_vela_completo
+    description: Identifica Castelo Vela como 26009 sem confundir com Castelo Gard (26008)
+    input: "qual a LDP do Castelo Vela"
+    expected:
+      tool_called: find_lista_definicoes
+      tool_args:
+        project_number: 26009
+    tags:
+      - identification
+      - disambiguation
+
+  - id: identifica_por_numero_explicito
+    description: Aceita número de projeto direto e reconhece o projeto na resposta (sem cobrar nome do cliente, já que com input vago Thor pode pedir clarificação)
+    input: "definições do 26003"
+    expected:
+      response_contains:
+        - "26003"
+      response_regex:
+        - "(?i)(projeto|defini|busc|consult|qual)"
+    tags:
+      - identification
+
+  - id: identifica_via_arroba
+    description: Aceita prefixo @<numero> e dispara find_lista_definicoes
+    input: "@26009 me dá a LDP"
+    expected:
+      tool_called: find_lista_definicoes
+      tool_args:
+        project_number: 26009
+    tags:
+      - identification
+      - syntax
