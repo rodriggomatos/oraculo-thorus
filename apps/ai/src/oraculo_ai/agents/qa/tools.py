@@ -1,11 +1,13 @@
 """Tools do agente Q&A."""
 
 from datetime import date
+from uuid import UUID
 
 from langchain_core.tools import tool
 
 from oraculo_ai.agents.qa.repository import ProjectRepository
 from oraculo_ai.ingestion.google_sheets.pipeline import register_definition_version
+from oraculo_ai.ingestion.schema import SYSTEM_USER_ID
 from oraculo_ai.retrieval.schema import SearchQuery
 from oraculo_ai.retrieval.search import search
 
@@ -81,65 +83,71 @@ async def find_project_by_name(name_or_term: str) -> list[dict]:
     ]
 
 
-@tool
-async def register_definition(
-    project_number: int,
-    item_code: str,
-    pergunta: str,
-    opcao_escolhida: str | None,
-    disciplina: str | None,
-    tipo: str | None,
-    fase: str | None,
-    status: str | None,
-    fonte_informacao: str,
-    fonte_descricao: str,
-    data_informacao: str | None = None,
-) -> str:
-    """Registra uma nova versão de definição técnica para o projeto.
+def make_register_definition(user_id: UUID):
+    """Cria uma tool register_definition bound ao user_id do contexto.
 
-    Use quando o usuário informar uma alteração ou nova definição (via chat,
-    reunião transcrita, email, etc).
-
-    SEMPRE faz INSERT — nunca UPDATE. Múltiplas versões coexistem no banco;
-    a busca futura retorna sempre a mais recente como vigente, mas mantém
-    histórico de como evoluiu.
-
-    Antes de chamar esta tool, USE search_definitions pra confirmar:
-    - Se o item_code já existe (mudança) ou é novo
-    - Se há ambiguidade (múltiplos itens parecidos) → PERGUNTE ao usuário
-
-    Args:
-        project_number: Número do projeto (ex: 26002).
-        item_code: Código do item (ex: PL4, ELE03).
-        pergunta: Texto da pergunta/definição.
-        opcao_escolhida: Valor escolhido / decisão atual. None se ainda em aberto.
-        disciplina: Disciplina (ex: Hidráulica, Elétrica, Acabamentos).
-        tipo: Tipo (ex: Tubulação, Piso, Tomada).
-        fase: Fase do projeto.
-        status: Status (ex: validado, em análise).
-        fonte_informacao: Tipo da fonte ('chat', 'reuniao', 'email', 'documento').
-        fonte_descricao: Descrição livre da fonte (ex: 'User informou via chat').
-        data_informacao: Data ISO 'YYYY-MM-DD' da informação. Se None, usa hoje.
+    Garante que toda gravação na tabela definitions registra o autor sem depender
+    do LLM passar o UUID corretamente.
     """
-    parsed_date: date | None = None
-    if data_informacao:
-        parsed_date = date.fromisoformat(data_informacao)
 
-    result = await register_definition_version(
-        project_number=project_number,
-        item_code=item_code,
-        pergunta=pergunta,
-        opcao_escolhida=opcao_escolhida,
-        disciplina=disciplina,
-        tipo=tipo,
-        fase=fase,
-        status=status,
-        fonte_informacao=fonte_informacao,
-        fonte_descricao=fonte_descricao,
-        data_informacao=parsed_date,
-    )
+    @tool
+    async def register_definition(
+        project_number: int,
+        item_code: str,
+        pergunta: str,
+        opcao_escolhida: str | None,
+        disciplina: str | None,
+        tipo: str | None,
+        fase: str | None,
+        status: str | None,
+        fonte_informacao: str,
+        fonte_descricao: str,
+        data_informacao: str | None = None,
+    ) -> str:
+        """Registra uma nova versão de definição técnica para o projeto.
 
-    return (
-        f"Registrado: Item {result['item_code']} = {result['opcao_escolhida']}, "
-        f"fonte: {result['fonte_descricao']}, data: {result['data_informacao']}"
-    )
+        Use quando o usuário informar uma alteração ou nova definição (via chat, reunião transcrita, email, etc). SEMPRE faz INSERT — nunca UPDATE. Múltiplas versões coexistem no banco; busca futura retorna a mais recente como vigente, mantendo histórico.
+
+        Antes de chamar, USE search_definitions pra confirmar se o item_code já existe e se não há ambiguidade.
+
+        Args:
+            project_number: Número do projeto (ex: 26002).
+            item_code: Código do item (ex: PL4, ELE03).
+            pergunta: Texto da pergunta/definição.
+            opcao_escolhida: Valor escolhido / decisão atual. None se ainda em aberto.
+            disciplina: Disciplina (ex: Hidráulica, Elétrica, Acabamentos).
+            tipo: Tipo (ex: Tubulação, Piso, Tomada).
+            fase: Fase do projeto.
+            status: Status (ex: validado, em análise).
+            fonte_informacao: Tipo da fonte ('chat', 'reuniao', 'email', 'documento').
+            fonte_descricao: Descrição livre da fonte (ex: 'User informou via chat').
+            data_informacao: Data ISO 'YYYY-MM-DD' da informação. Se None, usa hoje.
+        """
+        parsed_date: date | None = None
+        if data_informacao:
+            parsed_date = date.fromisoformat(data_informacao)
+
+        result = await register_definition_version(
+            project_number=project_number,
+            item_code=item_code,
+            pergunta=pergunta,
+            opcao_escolhida=opcao_escolhida,
+            disciplina=disciplina,
+            tipo=tipo,
+            fase=fase,
+            status=status,
+            fonte_informacao=fonte_informacao,
+            fonte_descricao=fonte_descricao,
+            data_informacao=parsed_date,
+            created_by_user_id=user_id,
+        )
+
+        return (
+            f"Registrado: Item {result['item_code']} = {result['opcao_escolhida']}, "
+            f"fonte: {result['fonte_descricao']}, data: {result['data_informacao']}"
+        )
+
+    return register_definition
+
+
+register_definition = make_register_definition(SYSTEM_USER_ID)

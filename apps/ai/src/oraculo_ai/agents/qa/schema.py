@@ -1,8 +1,15 @@
 """Pydantic schemas do agente Q&A."""
 
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
+
+
+class UserContext(BaseModel):
+    user_id: UUID
+    email: str
+    name: str
+    role: str = "engineer"
 
 
 class QAQuery(BaseModel):

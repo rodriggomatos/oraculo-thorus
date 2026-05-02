@@ -10,16 +10,20 @@ from langchain_core.messages import AIMessage
 from langchain_litellm import ChatLiteLLM
 from langgraph.checkpoint.memory import InMemorySaver
 
-from oraculo_ai.agents.qa.agent import _SYSTEM_PROMPT
+from uuid import UUID
+
+from oraculo_ai.agents.qa.agent import _DEFAULT_USER_CONTEXT, _render_system_prompt
 from oraculo_ai.agents.qa.mcp_client import get_drive_tools
+from oraculo_ai.agents.qa.schema import UserContext
 from oraculo_ai.agents.qa.tools import (
     find_project_by_name,
     list_projects,
-    register_definition,
+    make_register_definition,
     search_definitions,
 )
 from oraculo_ai.core.config import Settings, get_settings
 from oraculo_ai.core.db import close_db, init_db
+from oraculo_ai.ingestion.schema import SYSTEM_USER_ID
 
 from tests.eval.assertions import evaluate_assertions
 from tests.eval.schemas import EvalCase
@@ -57,6 +61,14 @@ _agent_singleton: Any | None = None
 _db_initialized: bool = False
 
 
+_TEST_USER = UserContext(
+    user_id=SYSTEM_USER_ID,
+    email="system@thorus.com.br",
+    name="Eval Test Runner",
+    role="system",
+)
+
+
 async def get_or_build_agent() -> Any:
     global _agent_singleton, _db_initialized
     if _agent_singleton is not None:
@@ -80,6 +92,7 @@ async def get_or_build_agent() -> Any:
     )
 
     drive_tools = await get_drive_tools()
+    register_definition_bound = make_register_definition(_TEST_USER.user_id)
 
     _agent_singleton = create_agent(
         model=llm,
@@ -87,10 +100,10 @@ async def get_or_build_agent() -> Any:
             search_definitions,
             list_projects,
             find_project_by_name,
-            register_definition,
+            register_definition_bound,
             *drive_tools,
         ],
-        system_prompt=_SYSTEM_PROMPT,
+        system_prompt=_render_system_prompt(_TEST_USER),
         checkpointer=InMemorySaver(),
     )
     return _agent_singleton

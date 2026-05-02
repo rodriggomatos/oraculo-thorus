@@ -66,14 +66,16 @@ class SheetsRepository:
             informacao_auxiliar, apoio_1, apoio_2,
             source_sheet_id, source_row, raw_data,
             data_informacao, fonte_informacao, fonte_descricao,
-            source_document_id
+            source_document_id,
+            created_by_user_id, updated_by_user_id
         ) VALUES (
             %(project_id)s, %(disciplina)s, %(tipo)s, %(fase)s, %(item_code)s, %(pergunta)s,
             %(opcao_escolhida)s, %(status)s, %(custo)s, %(observacoes)s, %(validado)s,
             %(informacao_auxiliar)s, %(apoio_1)s, %(apoio_2)s,
             %(source_sheet_id)s, %(source_row)s, %(raw_data)s,
             %(data_informacao)s, %(fonte_informacao)s, %(fonte_descricao)s,
-            %(source_document_id)s
+            %(source_document_id)s,
+            %(created_by_user_id)s, %(updated_by_user_id)s
         )
         ON CONFLICT (project_id, item_code) WHERE fonte_informacao = 'lista_definicoes_inicial' DO UPDATE SET
             disciplina = EXCLUDED.disciplina,
@@ -93,6 +95,7 @@ class SheetsRepository:
             raw_data = EXCLUDED.raw_data,
             data_informacao = EXCLUDED.data_informacao,
             fonte_descricao = EXCLUDED.fonte_descricao,
+            updated_by_user_id = EXCLUDED.created_by_user_id,
             updated_at = now()
         RETURNING id, (xmax = 0) AS inserted
         """
@@ -115,14 +118,16 @@ class SheetsRepository:
             informacao_auxiliar, apoio_1, apoio_2,
             source_sheet_id, source_row, raw_data,
             data_informacao, fonte_informacao, fonte_descricao,
-            source_document_id
+            source_document_id,
+            created_by_user_id, updated_by_user_id
         ) VALUES (
             %(project_id)s, %(disciplina)s, %(tipo)s, %(fase)s, %(item_code)s, %(pergunta)s,
             %(opcao_escolhida)s, %(status)s, %(custo)s, %(observacoes)s, %(validado)s,
             %(informacao_auxiliar)s, %(apoio_1)s, %(apoio_2)s,
             %(source_sheet_id)s, %(source_row)s, %(raw_data)s,
             %(data_informacao)s, %(fonte_informacao)s, %(fonte_descricao)s,
-            %(source_document_id)s
+            %(source_document_id)s,
+            %(created_by_user_id)s, %(updated_by_user_id)s
         )
         RETURNING id
         """

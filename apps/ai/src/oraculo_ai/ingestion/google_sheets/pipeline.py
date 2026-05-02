@@ -10,7 +10,7 @@ from oraculo_ai.ingestion.google_sheets.connector import build_sheets_service, r
 from oraculo_ai.ingestion.google_sheets.content import build_chunk_text, compute_hash
 from oraculo_ai.ingestion.google_sheets.parser import parse_row
 from oraculo_ai.ingestion.google_sheets.repository import ChunksVectorStore, SheetsRepository
-from oraculo_ai.ingestion.schema import Definition, IngestionStats
+from oraculo_ai.ingestion.schema import SYSTEM_USER_ID, Definition, IngestionStats
 
 
 _INITIAL_SOURCE = "lista_definicoes_inicial"
@@ -64,6 +64,7 @@ async def run_ingestion(
             definition.fonte_informacao = _INITIAL_SOURCE
             definition.fonte_descricao = _INITIAL_DESCRICAO
             definition.data_informacao = today
+            definition.created_by_user_id = SYSTEM_USER_ID
 
             def_id, was_inserted = await repo.upsert_definition(definition)
             if was_inserted:
@@ -123,6 +124,7 @@ async def register_definition_version(
     status: str | None,
     fonte_informacao: str,
     fonte_descricao: str,
+    created_by_user_id: UUID,
     data_informacao: date | None = None,
     source_document_id: UUID | None = None,
     custo: str | None = None,
@@ -165,6 +167,7 @@ async def register_definition_version(
             fonte_informacao=fonte_informacao,
             fonte_descricao=fonte_descricao,
             source_document_id=source_document_id,
+            created_by_user_id=created_by_user_id,
         )
 
         def_id = await repo.insert_definition_version(definition)

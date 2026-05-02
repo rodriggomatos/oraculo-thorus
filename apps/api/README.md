@@ -47,8 +47,9 @@ Se isso **não** aparecer, o `--reload-dir` não pegou. Confirme que o caminho p
 
 ## Endpoints principais
 
-- `GET /health` — liveness
-- `POST /query` — pergunta ao agente Thor
+- `GET /health` — liveness (público)
+- `GET /auth/me` — perfil do usuário logado (requer Bearer token)
+- `POST /query` — pergunta ao agente Thor (requer Bearer token)
 - `GET /projects` — lista projetos ativos
 - `POST /documents/extract-from-sheets` — ingestão de LDP via Google Sheets
 - `POST /documents/extract-ldp` — ingestão de LDP via documentos do cliente
@@ -57,3 +58,105 @@ Se isso **não** aparecer, o `--reload-dir` não pegou. Confirme que o caminho p
 
 - A porta padrão é `8000`. Se mudar, ajuste o frontend (`NEXT_PUBLIC_AI_API_URL`).
 - O CORS está aberto pra `http://localhost:3000` (Next dev server).
+
+## Auth — Google OAuth via Supabase
+
+A API valida JWT do Supabase e exige domínio `@thorus.com.br`. Setup:
+
+### 1. Configurar Google OAuth no Supabase Studio
+
+1. **Google Cloud Console** (`console.cloud.google.com`):
+   - Crie projeto (ou use existente)
+   - APIs & Services → Credentials → Create Credentials → OAuth client ID
+   - Application type: Web application
+   - Authorized redirect URIs: `https://YOUR-PROJECT.supabase.co/auth/v1/callback`
+   - Anote: `Client ID`, `Client Secret`
+
+2. **Supabase Studio** → Authentication → Providers → Google:
+   - Enable Google
+   - Client ID + Client Secret (do passo 1)
+   - Save
+
+3. **Supabase Studio** → Authentication → URL Configuration:
+   - Site URL: `http://localhost:3000` (dev) ou URL de produção
+   - Redirect URLs: adicionar `http://localhost:3000/auth/callback` e o de produção
+
+4. **Restringir domínio Thórus** — duas camadas, defesa em profundidade:
+   - **Trigger no banco** (já configurado pela migration `20260502100000_add_auth_and_audit.sql`): a função `handle_new_user` rejeita signup de e-mail fora de `@thorus.com.br`.
+   - **Backend** (FastAPI `auth.py`): valida domínio em todo request, retorna 403 se não bater.
+   - **Frontend** (middleware): também valida e desloga + redireciona pra `/auth/error` se domínio errado.
+   - **Google OAuth `hd` param**: o login page passa `hd: 'thorus.com.br'` via `signInWithOAuth` pra que Google só ofereça contas Workspace Thórus na tela de seleção (UX — não é segurança).
+
+### 2. Configurar variáveis de ambiente
+
+No `.env` raiz:
+
+```bash
+SUPABASE_URL=https://YOUR-PROJECT.supabase.co
+SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxx
+SUPABASE_SECRET_KEY=sb_secret_xxx
+SUPABASE_JWT_SECRET=eyJhbG...   # Settings → API → JWT secret (HS256)
+# OU pra projetos novos com asymmetric JWT:
+SUPABASE_JWKS_URL=https://YOUR-PROJECT.supabase.co/auth/v1/.well-known/jwks.json
+ALLOWED_EMAIL_DOMAIN=thorus.com.br
+```
+
+No `apps/web/.env.local`:
+
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxx
+```
+
+### 3. Aplicar migration
+
+```bash
+supabase db push
+```
+
+Ou via Supabase Studio → SQL Editor → cole o conteúdo de `supabase/migrations/20260502100000_add_auth_and_audit.sql`.
+
+A migration é idempotente — pode rodar 2x.
+
+### 4. Validar setup
+
+```bash
+# 1. System user existe
+psql "$DATABASE_URL" -c "SELECT id, email, role FROM user_profiles WHERE role = 'system';"
+# Deve retornar 00000000-0000-0000-0000-000000000001
+
+# 2. Definitions antigas migradas
+psql "$DATABASE_URL" -c "SELECT COUNT(*) FROM definitions WHERE created_by_user_id IS NULL;"
+# Deve retornar 0
+
+# 3. Frontend bloqueia sem login
+# Acesse http://localhost:3000 → redireciona pra /login
+
+# 4. Login com email não-thorus → /auth/error?reason=domain
+```
+
+### 5. Criar usuário admin manualmente
+
+Após primeiro login Google de um colaborador, promover a admin via SQL:
+
+```sql
+UPDATE user_profiles SET role = 'admin' WHERE email = 'admin@thorus.com.br';
+```
+
+### 6. Testar fluxo de INSERT com audit trail
+
+```bash
+# Login com user X via UI
+# Pergunte no chat: "registra que evaporadora é Cassete no projeto 26002"
+# Verifique:
+psql "$DATABASE_URL" -c "
+  SELECT d.item_code, d.opcao_escolhida, u.email, u.name
+  FROM definitions d
+  JOIN user_profiles u ON u.id = d.created_by_user_id
+  ORDER BY d.created_at DESC LIMIT 1;
+"
+# Deve mostrar email/nome do user X que registrou
+```
+
+A resposta do Thor menciona o autor: "Registrado por Rodrigo Matos (rodrigo@thorus.com.br) em 2026-05-02."

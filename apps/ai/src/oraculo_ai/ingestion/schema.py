@@ -7,6 +7,9 @@ from uuid import UUID
 from pydantic import BaseModel
 
 
+SYSTEM_USER_ID: UUID = UUID("00000000-0000-0000-0000-000000000001")
+
+
 class Definition(BaseModel):
     id: UUID | None = None
     project_id: UUID
@@ -30,6 +33,8 @@ class Definition(BaseModel):
     fonte_informacao: str | None = None
     fonte_descricao: str | None = None
     source_document_id: UUID | None = None
+    created_by_user_id: UUID = SYSTEM_USER_ID
+    updated_by_user_id: UUID | None = None
 
 
 class IngestionStats(BaseModel):

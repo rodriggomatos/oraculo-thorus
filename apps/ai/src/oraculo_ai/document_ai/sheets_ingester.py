@@ -19,6 +19,7 @@ from oraculo_ai.document_ai.schemas import (
 from oraculo_ai.ingestion.google_sheets.connector import build_sheets_service
 from oraculo_ai.ingestion.google_sheets.pipeline import register_definition_version
 from oraculo_ai.ingestion.google_sheets.repository import SheetsRepository
+from oraculo_ai.ingestion.schema import SYSTEM_USER_ID
 
 
 ALIASES_BY_CANONICAL_FIELD: dict[str, list[str]] = {
@@ -392,6 +393,7 @@ async def ingest_from_sheets(
                 informacao_auxiliar=_trim_or_none(get("informacao_auxiliar")),
                 apoio_1=_trim_or_none(get("apoio_1")),
                 apoio_2=_trim_or_none(get("apoio_2")),
+                created_by_user_id=SYSTEM_USER_ID,
             )
             stats.rows_processed += 1
         except Exception as exc:
