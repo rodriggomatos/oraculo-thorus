@@ -13,6 +13,7 @@ from oraculo_ai.document_ai.repository import SourceDocumentsRepository
 from oraculo_ai.document_ai.schemas import IngestionStats
 from oraculo_ai.ingestion.google_sheets.pipeline import register_definition_version
 from oraculo_ai.ingestion.google_sheets.repository import SheetsRepository
+from oraculo_ai.ingestion.schema import SYSTEM_USER_ID
 
 
 _SCHEMA_PATH = Path(__file__).resolve().parent / "schema_thorus.json"
@@ -153,6 +154,7 @@ async def ingest_documents_into_ldp(project_number: int) -> IngestionStats:
             fonte_informacao="documento",
             fonte_descricao=fonte_descricao,
             source_document_id=primary_source_document_id,
+            created_by_user_id=SYSTEM_USER_ID,
         )
 
     return stats

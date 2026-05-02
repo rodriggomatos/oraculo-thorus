@@ -11,14 +11,15 @@ from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.checkpoint.memory import InMemorySaver
 
 from oraculo_ai.agents.qa.mcp_client import get_drive_tools
-from oraculo_ai.agents.qa.schema import Citation, QAAnswer, QAQuery
+from oraculo_ai.agents.qa.schema import Citation, QAAnswer, QAQuery, UserContext
 from oraculo_ai.agents.qa.tools import (
     find_project_by_name,
     list_projects,
-    register_definition,
+    make_register_definition,
     search_definitions,
 )
 from oraculo_ai.core.config import get_settings
+from oraculo_ai.ingestion.schema import SYSTEM_USER_ID
 
 
 def _resolve_api_key(model: str, settings: Any) -> str | None:
@@ -130,7 +131,33 @@ Adapte o conteúdo ao caso concreto:
 
 NÃO inclua a recomendação quando status=FOUND ou status=NOT_FOUND. Apenas UNCERTAIN gera recomendação.
 
-NÃO use tools de Drive pra responder perguntas técnicas sobre definições — pra isso, use search_definitions normalmente. Drive tools são pra DESCOBRIR arquivos/links."""
+NÃO use tools de Drive pra responder perguntas técnicas sobre definições — pra isso, use search_definitions normalmente. Drive tools são pra DESCOBRIR arquivos/links.
+
+USUÁRIO ATUAL:
+
+Contexto da sessão (NÃO confundir com o sujeito da pergunta — o usuário atual é quem está conversando com você):
+- Nome: {user_name}
+- Email: {user_email}
+
+Quando você usar register_definition (ou qualquer tool que registre/altere algo no banco), CONFIRME ao usuário a operação mencionando o autor da mudança. Formato obrigatório no fim da resposta de confirmação:
+
+"Registrado por {user_name} ({user_email}) em {data_atual}."
+
+Esse rastreamento é OBRIGATÓRIO em toda confirmação de INSERT/UPDATE no banco. Não invente outros nomes, sempre use o {user_name} e {user_email} do contexto desta sessão."""
+
+
+_DEFAULT_USER_CONTEXT = UserContext(
+    user_id=SYSTEM_USER_ID,
+    email="system@thorus.com.br",
+    name="Sistema",
+    role="system",
+)
+
+
+def _render_system_prompt(user: UserContext) -> str:
+    return _SYSTEM_PROMPT.replace("{user_name}", user.name).replace(
+        "{user_email}", user.email
+    )
 
 
 _NEGATIVE_PHRASES: tuple[str, ...] = (
@@ -148,8 +175,11 @@ _checkpointer = InMemorySaver()
 async def answer_question(
     query: QAQuery,
     checkpointer: BaseCheckpointSaver | None = None,
+    user: UserContext | None = None,
 ) -> QAAnswer:
     settings = get_settings()
+
+    effective_user = user or _DEFAULT_USER_CONTEXT
 
     llm = ChatLiteLLM(
         model=settings.llm_model_smart,
@@ -159,16 +189,18 @@ async def answer_question(
 
     drive_tools = await get_drive_tools()
 
+    register_definition_bound = make_register_definition(effective_user.user_id)
+
     agent = create_agent(
         model=llm,
         tools=[
             search_definitions,
             list_projects,
             find_project_by_name,
-            register_definition,
+            register_definition_bound,
             *drive_tools,
         ],
-        system_prompt=_SYSTEM_PROMPT,
+        system_prompt=_render_system_prompt(effective_user),
         checkpointer=checkpointer if checkpointer is not None else _checkpointer,
     )
 
