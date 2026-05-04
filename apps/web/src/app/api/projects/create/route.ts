@@ -1,23 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { proxyToBackend } from "@/lib/backend";
 import type {
   CreateProjectRequest,
   CreateProjectResponse,
 } from "@/features/create-project/types";
 
-// MOCK: substituir por chamada real ao backend (apps/ai) quando pronto.
-// Backend deveria: criar registro na tabela projects, persistir metadata,
-// preparar pasta no Drive (próximo sprint) e retornar projectId real.
 
-async function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-export async function POST(
-  request: NextRequest,
-): Promise<NextResponse<CreateProjectResponse | { error: string }>> {
-  await delay(1500);
-
-  const body = (await request.json()) as Partial<CreateProjectRequest>;
+export async function POST(request: NextRequest): Promise<NextResponse> {
+  const body = (await request.json().catch(() => ({}))) as Partial<CreateProjectRequest>;
   if (
     typeof body.confirmedNumber !== "number" ||
     typeof body.spreadsheetId !== "string" ||
@@ -29,13 +19,34 @@ export async function POST(
     );
   }
 
-  const response: CreateProjectResponse = {
-    projectId: `mock-${body.confirmedNumber}-${Date.now()}`,
-    projectNumber: body.confirmedNumber,
-    totalContratado: 147387.5,
-    margem: 24.33,
-    driveFolderPending: true,
+  const upstream = await proxyToBackend(request, "/projects/create", {
+    method: "POST",
+    body: {
+      spreadsheet_id: body.spreadsheetId,
+      confirmed_number: body.confirmedNumber,
+      metadata: body.metadata,
+    },
+  });
+
+  if (!upstream.ok) {
+    return upstream;
+  }
+
+  const data = (await upstream.json()) as {
+    project_id: string;
+    project_number: number;
+    total_contratado: number | null;
+    margem: number | null;
+    drive_folder_pending: boolean;
   };
 
-  return NextResponse.json(response);
+  const remapped: CreateProjectResponse = {
+    projectId: data.project_id,
+    projectNumber: data.project_number,
+    totalContratado: data.total_contratado ?? 0,
+    margem: data.margem ?? 0,
+    driveFolderPending: data.drive_folder_pending,
+  };
+
+  return NextResponse.json(remapped, { status: 200 });
 }
