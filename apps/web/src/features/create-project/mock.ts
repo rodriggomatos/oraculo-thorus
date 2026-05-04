@@ -1,3 +1,4 @@
+import { getBrowserSupabase } from "@/lib/supabase/client";
 import type {
   CreateProjectRequest,
   CreateProjectResponse,
@@ -10,10 +11,22 @@ import type {
 const API_BASE = "/api/projects";
 
 
+async function authHeaders(): Promise<Record<string, string>> {
+  try {
+    const supabase = getBrowserSupabase();
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch {
+    return {};
+  }
+}
+
+
 export async function suggestNumber(): Promise<SuggestNumberResponse> {
   const response = await fetch(`${API_BASE}/suggest-number`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
   });
   if (!response.ok) {
     throw new Error(`POST /suggest-number falhou (${response.status})`);
@@ -27,7 +40,7 @@ export async function parseSpreadsheet(
 ): Promise<ValidationResult> {
   const response = await fetch(`${API_BASE}/parse-sheet`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
     body: JSON.stringify({ spreadsheetId }),
   });
   if (!response.ok) {
@@ -42,7 +55,7 @@ export async function createProject(
 ): Promise<CreateProjectResponse> {
   const response = await fetch(`${API_BASE}/create`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
     body: JSON.stringify(request),
   });
   if (!response.ok) {
