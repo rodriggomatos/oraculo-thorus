@@ -63,9 +63,10 @@ export function ChatWindow({
     onUserMessage: onAppendUser,
   });
 
+  const flowReset = flow.reset;
   useEffect(() => {
-    flow.reset();
-  }, [threadId, flow]);
+    flowReset();
+  }, [threadId, flowReset]);
 
   useEffect(() => {
     if (!scrollRef.current) return;
