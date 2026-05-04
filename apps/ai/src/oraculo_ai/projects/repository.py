@@ -146,6 +146,14 @@ async def _scope_template_id_by_name(conn: Any, nome: str) -> UUID | None:
     return row["id"] if row else None
 
 
+def _empty_to_none(value: str | None) -> str | None:
+    """Converte string vazia/whitespace em None — convenção SQL pra ausência."""
+    if value is None:
+        return None
+    stripped = value.strip()
+    return stripped or None
+
+
 async def create_project_with_scope(
     *,
     project_number: int,
@@ -179,6 +187,11 @@ async def create_project_with_scope(
                     "created": False,
                 }
 
+            client_clean = _empty_to_none(client)
+            empreendimento_clean = _empty_to_none(empreendimento)
+            cidade_clean = _empty_to_none(cidade)
+            estado_clean = _empty_to_none(estado)
+
             async with conn.cursor(row_factory=dict_row) as cur:
                 await cur.execute(
                     """
@@ -196,8 +209,8 @@ async def create_project_with_scope(
                     RETURNING id
                     """,
                     (
-                        project_number, name, client, empreendimento, cidade,
-                        estado, area_m2, fluxo, custo_fator,
+                        project_number, name, client_clean, empreendimento_clean, cidade_clean,
+                        estado_clean, area_m2, _empty_to_none(fluxo), custo_fator,
                         total_contratado, margem,
                         orcamento_sheets_id, str(created_by),
                     ),
