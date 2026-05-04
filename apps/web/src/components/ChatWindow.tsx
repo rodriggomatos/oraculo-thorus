@@ -185,7 +185,7 @@ export function ChatWindow({
                 <div className="flex justify-start">
                   <div className="px-1">
                     <MetadataForm
-                      onConfirm={(m) => void flow.submitMetadata(m)}
+                      onConfirm={(m, cityId) => void flow.submitMetadata(m, cityId)}
                       loading={isCreating}
                       errorMessage={
                         flow.state.step === "awaiting_metadata"

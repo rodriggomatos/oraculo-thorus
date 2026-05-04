@@ -170,6 +170,7 @@ async def create_project_with_scope(
     orcamento_sheets_id: str,
     disciplinas: list[DisciplinaRow],
     created_by: UUID,
+    city_ibge_code: str | None = None,
 ) -> dict[str, Any]:
     """Idempotente em project_number — se já existe, retorna sem duplicar.
 
@@ -199,12 +200,14 @@ async def create_project_with_scope(
                         project_number, name, client, empreendimento, cidade,
                         estado, area_m2, fluxo, custo_fator,
                         total_contratado, margem,
-                        orcamento_sheets_id, created_by, status
+                        orcamento_sheets_id, created_by, status,
+                        city_ibge_code
                     ) VALUES (
                         %s, %s, %s, %s, %s,
                         %s, %s, %s, %s,
                         %s, %s,
-                        %s, %s, 'active'
+                        %s, %s, 'active',
+                        %s
                     )
                     RETURNING id
                     """,
@@ -213,6 +216,7 @@ async def create_project_with_scope(
                         estado_clean, area_m2, _empty_to_none(fluxo), custo_fator,
                         total_contratado, margem,
                         orcamento_sheets_id, str(created_by),
+                        _empty_to_none(city_ibge_code),
                     ),
                 )
                 row = await cur.fetchone()

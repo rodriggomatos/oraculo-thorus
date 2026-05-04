@@ -114,7 +114,7 @@ export interface UseCreateProjectFlowReturn {
   submitUserText: (text: string) => Promise<void>;
   submitFile: (file: File) => Promise<void>;
   confirmNumber: (confirmed: number) => void;
-  submitMetadata: (metadata: ProjectMetadata) => Promise<void>;
+  submitMetadata: (metadata: ProjectMetadata, cityId?: number | null) => Promise<void>;
   decideContinue: () => Promise<void>;
   decideFix: () => void;
   reset: () => void;
@@ -173,7 +173,7 @@ export function useCreateProjectFlow(
   );
 
   const submitMetadata = useCallback(
-    async (metadata: ProjectMetadata): Promise<void> => {
+    async (metadata: ProjectMetadata, cityId: number | null = null): Promise<void> => {
       if (state.step !== "awaiting_metadata") return;
       onUserMessage(
         `Cliente: ${metadata.cliente} • Empreendimento: ${metadata.empreendimento} • Cidade: ${metadata.cidade}` +
@@ -187,6 +187,7 @@ export function useCreateProjectFlow(
           spreadsheetId: state.spreadsheetId ?? "mock-spreadsheet",
           confirmedNumber: state.confirmedNumber!,
           metadata,
+          cityId,
         });
         dispatch({ type: "CREATED", result });
         const valor = result.totalContratado.toLocaleString("pt-BR", {

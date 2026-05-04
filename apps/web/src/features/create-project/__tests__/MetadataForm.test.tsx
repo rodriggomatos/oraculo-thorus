@@ -1,108 +1,75 @@
-import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+
+
+vi.mock("../cities-client", () => ({
+  fetchCities: vi.fn(),
+  stripAccents: (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, ""),
+}));
+
+
+import * as citiesClient from "../cities-client";
 import { MetadataForm } from "../MetadataForm";
 
 
+const FAKE_CITIES = [
+  { id: 4205407, nome: "Florianópolis", estado: "SC" },
+  { id: 4313409, nome: "Porto Alegre", estado: "RS" },
+  { id: 3550308, nome: "São Paulo", estado: "SP" },
+];
+
+
 describe("<MetadataForm />", () => {
-  it("renders 4 inputs with labels", () => {
-    render(<MetadataForm onConfirm={() => undefined} />);
-    expect(screen.getByText(/cliente/i)).toBeInTheDocument();
-    expect(screen.getByText(/empreendimento/i)).toBeInTheDocument();
-    expect(screen.getByText(/cidade/i)).toBeInTheDocument();
-    expect(screen.getByText(/estado/i)).toBeInTheDocument();
+  beforeEach(() => {
+    vi.mocked(citiesClient.fetchCities).mockResolvedValue(FAKE_CITIES);
   });
 
-  it("disables submit until required fields are filled", async () => {
+  afterEach(() => {
+    vi.resetAllMocks();
+  });
+
+  async function renderAndWait() {
+    const utils = render(<MetadataForm onConfirm={() => undefined} />);
+    await waitFor(() =>
+      expect(citiesClient.fetchCities).toHaveBeenCalledTimes(1),
+    );
+    return utils;
+  }
+
+  it("renders cliente, empreendimento inputs and city + estado comboboxes", async () => {
+    await renderAndWait();
+    expect(screen.getByText(/^cliente/i)).toBeInTheDocument();
+    expect(screen.getByText(/^empreendimento/i)).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: /cidade/i })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: /estado/i })).toBeInTheDocument();
+  });
+
+  it("disables submit until cliente/empreendimento filled and city selected", async () => {
     const user = userEvent.setup();
-    render(<MetadataForm onConfirm={() => undefined} />);
-    const button = screen.getByRole("button", { name: /confirmar/i });
-    expect(button).toBeDisabled();
+    await renderAndWait();
+    const submit = screen.getByRole("button", { name: /confirmar/i });
+    expect(submit).toBeDisabled();
 
     const inputs = screen.getAllByRole("textbox");
     await user.type(inputs[0], "Acme");
     await user.type(inputs[1], "Torre A");
-    expect(button).toBeDisabled();
-
-    await user.type(inputs[2], "Florianópolis");
-    expect(button).toBeEnabled();
+    expect(submit).toBeDisabled();
   });
 
-  it("calls onConfirm with trimmed values and uppercase estado", async () => {
-    const user = userEvent.setup();
-    const onConfirm = vi.fn();
-    render(<MetadataForm onConfirm={onConfirm} />);
-
-    const inputs = screen.getAllByRole("textbox");
-    await user.type(inputs[0], "  Acme  ");
-    await user.type(inputs[1], "Torre A");
-    await user.type(inputs[2], "Florianópolis");
-    await user.type(inputs[3], "sc");
-
-    await user.click(screen.getByRole("button", { name: /confirmar/i }));
-
-    expect(onConfirm).toHaveBeenCalledWith({
-      cliente: "Acme",
-      empreendimento: "Torre A",
-      cidade: "Florianópolis",
-      estado: "SC",
-    });
-  });
-
-  it("submits without estado when left blank", async () => {
-    const user = userEvent.setup();
-    const onConfirm = vi.fn();
-    render(<MetadataForm onConfirm={onConfirm} />);
-
-    const inputs = screen.getAllByRole("textbox");
-    await user.type(inputs[0], "Acme");
-    await user.type(inputs[1], "Torre A");
-    await user.type(inputs[2], "Floripa");
-
-    await user.click(screen.getByRole("button", { name: /confirmar/i }));
-
-    expect(onConfirm).toHaveBeenCalledWith({
-      cliente: "Acme",
-      empreendimento: "Torre A",
-      cidade: "Floripa",
-      estado: undefined,
-    });
-  });
-
-  it("limits estado to 2 characters and uppercases on input", async () => {
-    const user = userEvent.setup();
-    render(<MetadataForm onConfirm={() => undefined} />);
-    const inputs = screen.getAllByRole("textbox");
-    const estadoInput = inputs[3] as HTMLInputElement;
-    await user.type(estadoInput, "abcdef");
-    expect(estadoInput.value).toBe("AB");
-  });
-
-  it("submit on Enter from last field when valid", async () => {
-    const user = userEvent.setup();
-    const onConfirm = vi.fn();
-    render(<MetadataForm onConfirm={onConfirm} />);
-    const inputs = screen.getAllByRole("textbox");
-    await user.type(inputs[0], "Acme");
-    await user.type(inputs[1], "Torre A");
-    await user.type(inputs[2], "Floripa");
-    await user.type(inputs[3], "SC{Enter}");
-    expect(onConfirm).toHaveBeenCalledTimes(1);
-  });
-
-  it("renders loading state with spinner and disables submit", () => {
+  it("renders loading state with spinner and disables submit", async () => {
     render(<MetadataForm onConfirm={() => undefined} loading />);
     expect(screen.getByText(/Criando…/)).toBeInTheDocument();
-    expect(screen.getByRole("button")).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Criando…/ })).toBeDisabled();
   });
 
-  it("disables all inputs when loading", () => {
+  it("disables text inputs when loading", async () => {
     render(<MetadataForm onConfirm={() => undefined} loading />);
     const inputs = screen.getAllByRole("textbox");
     for (const input of inputs) expect(input).toBeDisabled();
   });
 
-  it("shows errorMessage inline when provided", () => {
+  it("shows errorMessage inline when provided", async () => {
     render(
       <MetadataForm
         onConfirm={() => undefined}
@@ -112,17 +79,74 @@ describe("<MetadataForm />", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(/500 Internal Server Error/);
   });
 
-  it("does not call onConfirm when loading=true even with valid inputs", async () => {
+  it("shows amber alert when fetchCities fails", async () => {
+    vi.mocked(citiesClient.fetchCities).mockRejectedValueOnce(new Error("offline"));
+    render(<MetadataForm onConfirm={() => undefined} />);
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/cidades/i);
+      expect(screen.getByRole("alert")).toHaveTextContent(/offline/);
+    });
+  });
+
+  it("opens cidade combobox and lists cities by name", async () => {
+    const user = userEvent.setup();
+    await renderAndWait();
+    const cityCombobox = screen.getByRole("combobox", { name: /cidade/i });
+    await user.click(cityCombobox);
+    const option = await screen.findByRole("option", { name: /Florianópolis/ });
+    expect(option).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /Porto Alegre/ })).toBeInTheDocument();
+  });
+
+  it("selecting city autofills the estado combobox label", async () => {
+    const user = userEvent.setup();
+    await renderAndWait();
+    await user.click(screen.getByRole("combobox", { name: /cidade/i }));
+    await user.click(await screen.findByRole("option", { name: /Florianópolis/ }));
+    const estadoCombobox = screen.getByRole("combobox", { name: /estado/i });
+    expect(estadoCombobox).toHaveTextContent("SC - Santa Catarina");
+  });
+
+  it("calls onConfirm with metadata + cityId when valid", async () => {
     const user = userEvent.setup();
     const onConfirm = vi.fn();
-    const { rerender } = render(<MetadataForm onConfirm={onConfirm} />);
-    const inputs = screen.getAllByRole("textbox");
-    await user.type(inputs[0], "Acme");
-    await user.type(inputs[1], "Torre A");
-    await user.type(inputs[2], "Floripa");
+    const { rerender: _rerender } = render(<MetadataForm onConfirm={onConfirm} />);
+    await waitFor(() =>
+      expect(citiesClient.fetchCities).toHaveBeenCalledTimes(1),
+    );
 
-    rerender(<MetadataForm onConfirm={onConfirm} loading />);
-    await user.click(screen.getByRole("button"));
-    expect(onConfirm).not.toHaveBeenCalled();
+    const inputs = screen.getAllByRole("textbox");
+    await user.type(inputs[0], "  Acme  ");
+    await user.type(inputs[1], "Torre A");
+
+    await user.click(screen.getByRole("combobox", { name: /cidade/i }));
+    await user.click(await screen.findByRole("option", { name: /Florianópolis/ }));
+
+    await user.click(screen.getByRole("button", { name: /confirmar/i }));
+
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(onConfirm).toHaveBeenCalledWith(
+      {
+        cliente: "Acme",
+        empreendimento: "Torre A",
+        cidade: "Florianópolis",
+        estado: "SC",
+      },
+      4205407,
+    );
+  });
+
+  it("clearing city via X unlocks estado combobox for editing", async () => {
+    const user = userEvent.setup();
+    await renderAndWait();
+
+    await user.click(screen.getByRole("combobox", { name: /cidade/i }));
+    await user.click(await screen.findByRole("option", { name: /Florianópolis/ }));
+
+    expect(screen.getByRole("combobox", { name: /estado/i })).toBeDisabled();
+
+    await user.click(screen.getByRole("button", { name: /limpar seleção/i }));
+
+    expect(screen.getByRole("combobox", { name: /estado/i })).not.toBeDisabled();
   });
 });

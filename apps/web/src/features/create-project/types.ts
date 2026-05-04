@@ -51,6 +51,7 @@ export interface CreateProjectRequest {
   spreadsheetId: string;
   confirmedNumber: number;
   metadata: ProjectMetadata;
+  cityId?: number | null;
 }
 
 

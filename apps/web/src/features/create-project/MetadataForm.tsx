@@ -1,37 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import type { ProjectMetadata } from "./types";
+import { BR_STATES } from "./br-states";
+import { fetchCities, stripAccents } from "./cities-client";
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 
 
 export type MetadataFormProps = {
-  onConfirm: (metadata: ProjectMetadata) => void;
+  onConfirm: (metadata: ProjectMetadata, cityId: number | null) => void;
   loading?: boolean;
   errorMessage?: string | null;
   disabled?: boolean;
 };
 
 
-type FieldKey = "cliente" | "empreendimento" | "cidade" | "estado";
-
-
-const LABEL_BY_FIELD: Record<FieldKey, string> = {
-  cliente: "Cliente",
-  empreendimento: "Empreendimento",
-  cidade: "Cidade",
-  estado: "Estado (opcional)",
-};
-
-
-const REQUIRED: ReadonlySet<FieldKey> = new Set(["cliente", "empreendimento", "cidade"]);
+type CityRow = { id: number; nome: string; estado: string };
 
 
 const FIELD_CLASSES =
   "w-full rounded-md border border-[var(--sidebar-border,rgba(255,255,255,0.15))] bg-[var(--sidebar-popover-bg,rgba(0,0,0,0.4))] px-3 py-2 text-sm text-[var(--sidebar-text)] placeholder:text-[var(--sidebar-text-muted)] outline-none transition-colors focus:border-[var(--sidebar-active,#3b82f6)] disabled:opacity-60";
 
-const FIELD_INVALID_CLASSES =
-  "border-red-500/70 focus:border-red-500";
+const FIELD_INVALID_CLASSES = "border-red-500/70 focus:border-red-500";
+
+
+const STATE_OPTIONS: ComboboxOption[] = BR_STATES.map((s) => ({
+  value: s.code,
+  label: `${s.code} - ${s.nome}`,
+  searchTerms: stripAccents(s.nome).toLowerCase(),
+}));
 
 
 export function MetadataForm({
@@ -40,28 +38,79 @@ export function MetadataForm({
   errorMessage = null,
   disabled = false,
 }: MetadataFormProps): React.ReactElement {
-  const [values, setValues] = useState<Record<FieldKey, string>>({
-    cliente: "",
-    empreendimento: "",
-    cidade: "",
-    estado: "",
-  });
+  const [cliente, setCliente] = useState("");
+  const [empreendimento, setEmpreendimento] = useState("");
+  const [cityId, setCityId] = useState<number | null>(null);
+  const [estado, setEstado] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
+
+  const [cities, setCities] = useState<CityRow[] | null>(null);
+  const [citiesError, setCitiesError] = useState<string | null>(null);
 
   const isDisabled = disabled || loading;
 
-  const trimmed = (k: FieldKey): string => values[k].trim();
-  const missingRequired = (Array.from(REQUIRED) as FieldKey[]).filter(
-    (k) => trimmed(k).length === 0,
+  useEffect(() => {
+    let mounted = true;
+    void fetchCities()
+      .then((data) => {
+        if (mounted) setCities(data);
+      })
+      .catch((e: unknown) => {
+        if (!mounted) return;
+        const message = e instanceof Error ? e.message : "Falha ao carregar cidades";
+        setCitiesError(message);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const filteredCities = useMemo<CityRow[]>(() => {
+    if (cities === null) return [];
+    if (estado === null || cityId !== null) return cities;
+    return cities.filter((c) => c.estado === estado);
+  }, [cities, estado, cityId]);
+
+  const cityOptions: ComboboxOption[] = useMemo(
+    () =>
+      filteredCities.map((c) => ({
+        value: String(c.id),
+        label: `${c.nome} - ${c.estado}`,
+        searchTerms: stripAccents(c.nome).toLowerCase(),
+      })),
+    [filteredCities],
   );
+
+  const selectedCity = useMemo<CityRow | null>(() => {
+    if (cityId === null || cities === null) return null;
+    return cities.find((c) => c.id === cityId) ?? null;
+  }, [cityId, cities]);
+
+  const cidadeNome = selectedCity?.nome ?? "";
+  const stateLockedByCity = selectedCity !== null;
+
+  const missingRequired: string[] = [];
+  if (!cliente.trim()) missingRequired.push("cliente");
+  if (!empreendimento.trim()) missingRequired.push("empreendimento");
+  if (!cidadeNome) missingRequired.push("cidade");
   const isValid = missingRequired.length === 0;
 
-  const setField = (key: FieldKey, value: string): void => {
-    if (key === "estado") {
-      setValues((prev) => ({ ...prev, estado: value.toUpperCase().slice(0, 2) }));
+  const handleCityChange = (next: string | null): void => {
+    if (next === null) {
+      setCityId(null);
       return;
     }
-    setValues((prev) => ({ ...prev, [key]: value }));
+    const id = Number.parseInt(next, 10);
+    if (Number.isNaN(id) || cities === null) return;
+    const city = cities.find((c) => c.id === id);
+    if (!city) return;
+    setCityId(id);
+    setEstado(city.estado);
+  };
+
+  const handleStateChange = (next: string | null): void => {
+    if (stateLockedByCity) return;
+    setEstado(next);
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
@@ -71,13 +120,20 @@ export function MetadataForm({
       setShowErrors(true);
       return;
     }
-    onConfirm({
-      cliente: trimmed("cliente"),
-      empreendimento: trimmed("empreendimento"),
-      cidade: trimmed("cidade"),
-      estado: trimmed("estado") || undefined,
-    });
+    const metadata: ProjectMetadata = {
+      cliente: cliente.trim(),
+      empreendimento: empreendimento.trim(),
+      cidade: cidadeNome,
+      estado: estado ?? undefined,
+    };
+    onConfirm(metadata, cityId);
   };
+
+  const showClienteError = showErrors && cliente.trim().length === 0;
+  const showEmpreendimentoError = showErrors && empreendimento.trim().length === 0;
+  const showCidadeError = showErrors && cidadeNome.length === 0;
+
+  const citiesLoading = cities === null && citiesError === null;
 
   return (
     <form
@@ -86,31 +142,92 @@ export function MetadataForm({
       aria-label="Metadados do projeto"
       aria-busy={loading}
     >
-      {(Object.keys(LABEL_BY_FIELD) as FieldKey[]).map((key) => {
-        const isRequired = REQUIRED.has(key);
-        const invalid = showErrors && isRequired && trimmed(key).length === 0;
-        return (
-          <label key={key} className="flex flex-col gap-1 text-xs text-[var(--sidebar-text-muted)]">
-            <span>
-              {LABEL_BY_FIELD[key]}
-              {isRequired ? <span className="text-red-400"> *</span> : null}
+      <label className="flex flex-col gap-1 text-xs text-[var(--sidebar-text-muted)]">
+        <span>
+          Cliente
+          <span className="text-red-400"> *</span>
+        </span>
+        <input
+          type="text"
+          value={cliente}
+          onChange={(e) => setCliente(e.target.value)}
+          autoComplete="off"
+          spellCheck={false}
+          disabled={isDisabled}
+          aria-invalid={showClienteError}
+          aria-required
+          className={`${FIELD_CLASSES} ${showClienteError ? FIELD_INVALID_CLASSES : ""}`}
+        />
+      </label>
+
+      <label className="flex flex-col gap-1 text-xs text-[var(--sidebar-text-muted)]">
+        <span>
+          Empreendimento
+          <span className="text-red-400"> *</span>
+        </span>
+        <input
+          type="text"
+          value={empreendimento}
+          onChange={(e) => setEmpreendimento(e.target.value)}
+          autoComplete="off"
+          spellCheck={false}
+          disabled={isDisabled}
+          aria-invalid={showEmpreendimentoError}
+          aria-required
+          className={`${FIELD_CLASSES} ${showEmpreendimentoError ? FIELD_INVALID_CLASSES : ""}`}
+        />
+      </label>
+
+      <div className="flex flex-col gap-1 text-xs text-[var(--sidebar-text-muted)]">
+        <span>
+          Cidade
+          <span className="text-red-400"> *</span>
+        </span>
+        <Combobox
+          options={cityOptions}
+          value={cityId !== null ? String(cityId) : null}
+          onChange={handleCityChange}
+          placeholder={citiesError ? "Erro ao carregar cidades" : "Selecione a cidade"}
+          searchPlaceholder="Buscar cidade…"
+          emptyMessage="Nenhuma cidade encontrada."
+          disabled={isDisabled || citiesLoading || citiesError !== null}
+          loading={citiesLoading}
+          loadingMessage="Carregando cidades…"
+          ariaLabel="Cidade"
+          triggerClassName={showCidadeError ? "border-red-500/70" : ""}
+        />
+      </div>
+
+      <div className="flex flex-col gap-1 text-xs text-[var(--sidebar-text-muted)]">
+        <span>
+          Estado (opcional)
+          {stateLockedByCity ? (
+            <span className="ml-1 text-[10px] text-[var(--sidebar-text-muted)]">
+              (definido pela cidade)
             </span>
-            <input
-              type="text"
-              value={values[key]}
-              onChange={(e) => setField(key, e.target.value)}
-              maxLength={key === "estado" ? 2 : undefined}
-              autoComplete="off"
-              autoCapitalize={key === "estado" ? "characters" : "words"}
-              spellCheck={false}
-              disabled={isDisabled}
-              aria-invalid={invalid}
-              aria-required={isRequired}
-              className={`${FIELD_CLASSES} ${invalid ? FIELD_INVALID_CLASSES : ""}`}
-            />
-          </label>
-        );
-      })}
+          ) : null}
+        </span>
+        <Combobox
+          options={STATE_OPTIONS}
+          value={estado}
+          onChange={handleStateChange}
+          placeholder="Selecione o estado"
+          searchPlaceholder="Buscar UF ou nome…"
+          emptyMessage="Nenhum estado encontrado."
+          disabled={isDisabled || stateLockedByCity}
+          ariaLabel="Estado"
+        />
+      </div>
+
+      {citiesError ? (
+        <p
+          role="alert"
+          className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-300"
+        >
+          Não consegui carregar a lista de cidades: {citiesError}
+        </p>
+      ) : null}
+
       {errorMessage ? (
         <p
           role="alert"
@@ -119,6 +236,7 @@ export function MetadataForm({
           {errorMessage}
         </p>
       ) : null}
+
       <div className="flex items-center justify-end gap-2 pt-1">
         <button
           type="submit"

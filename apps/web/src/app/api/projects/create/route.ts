@@ -19,12 +19,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
+  const metadataPayload: Record<string, unknown> = { ...body.metadata };
+  if (typeof body.cityId === "number") {
+    metadataPayload.city_id = body.cityId;
+  }
+
   const upstream = await proxyToBackend(request, "/projects/create", {
     method: "POST",
     body: {
       spreadsheet_id: body.spreadsheetId,
       confirmed_number: body.confirmedNumber,
-      metadata: body.metadata,
+      metadata: metadataPayload,
     },
   });
 
