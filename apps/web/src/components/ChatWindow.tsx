@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { FolderOpen, ListTodo, Search } from "lucide-react";
 import { InputArea } from "./chat/InputArea";
 import { FlowDecisionBar } from "./chat/FlowDecisionBar";
+import { NumberConfirmBar } from "./chat/NumberConfirmBar";
 import { Message as MessageComponent } from "./Message";
 import { ThinkingIndicator } from "./ThinkingIndicator";
 import { MetadataForm } from "@/features/create-project/MetadataForm";
@@ -101,6 +102,9 @@ export function ChatWindow({
 
   const acceptingFiles = flow.isActive;
 
+  const showNumberBar =
+    flow.state.step === "awaiting_number_confirmation" &&
+    typeof flow.state.suggestedNumber === "number";
   const showDecisionBar = flow.state.step === "awaiting_validation_decision";
   const showMetadataForm = flow.state.step === "awaiting_metadata";
 
@@ -153,6 +157,16 @@ export function ChatWindow({
                 <MessageComponent key={i} message={m} />
               ))}
               {isLoading && <ThinkingIndicator />}
+              {showNumberBar && typeof flow.state.suggestedNumber === "number" ? (
+                <div className="flex justify-start">
+                  <div className="px-1">
+                    <NumberConfirmBar
+                      suggested={flow.state.suggestedNumber}
+                      onConfirm={(n) => flow.confirmNumber(n)}
+                    />
+                  </div>
+                </div>
+              ) : null}
               {showDecisionBar ? (
                 <div className="flex justify-start">
                   <div className="px-1">
