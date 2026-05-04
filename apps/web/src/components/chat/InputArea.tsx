@@ -16,6 +16,7 @@ export type InputAreaProps = {
   canCreateProject: boolean;
   acceptingFiles: boolean;
   isLoading: boolean;
+  parsing?: boolean;
   placeholder?: string;
 };
 
@@ -27,8 +28,10 @@ export function InputArea({
   canCreateProject,
   acceptingFiles,
   isLoading,
+  parsing = false,
   placeholder = "Pergunte alguma coisa",
 }: InputAreaProps): React.ReactElement {
+  const inputDisabled = isLoading || parsing;
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const openPickerRef = useRef<(() => void) | null>(null);
@@ -44,7 +47,7 @@ export function InputArea({
 
   const handleSubmit = async (): Promise<void> => {
     const trimmed = value.trim();
-    if (!trimmed || isLoading) return;
+    if (!trimmed || inputDisabled) return;
     setValue("");
     await onSend(trimmed);
   };
@@ -65,11 +68,12 @@ export function InputArea({
 
   return (
     <ChatDropZone
-      active={acceptingFiles}
+      active={acceptingFiles && !parsing}
       onFileAccepted={handleFileAccepted}
       registerOpenPicker={(open) => {
         openPickerRef.current = open;
       }}
+      parsing={parsing}
       className="w-full"
     >
       <div className="flex w-full items-end gap-2 rounded-3xl bg-[var(--sidebar-popover-bg)] px-3 py-2">
@@ -77,7 +81,7 @@ export function InputArea({
           canCreateProject={canCreateProject}
           onAttachFile={handleAttachFile}
           onCreateProject={handleCreateProject}
-          disabled={isLoading}
+          disabled={inputDisabled}
         />
         <textarea
           ref={textareaRef}
@@ -89,15 +93,15 @@ export function InputArea({
               void handleSubmit();
             }
           }}
-          placeholder={placeholder}
+          placeholder={parsing ? "Analisando a planilha…" : placeholder}
           className="flex-1 self-center resize-none bg-transparent py-2 min-h-[28px] max-h-[200px] text-[var(--sidebar-text)] placeholder:text-[var(--sidebar-text-muted)] outline-none"
           rows={1}
-          disabled={isLoading}
+          disabled={inputDisabled}
         />
         <button
           type="button"
           onClick={() => void handleSubmit()}
-          disabled={!value.trim() || isLoading}
+          disabled={!value.trim() || inputDisabled}
           aria-label="Enviar"
           className="shrink-0 rounded-full bg-white p-2 text-zinc-900 transition-colors hover:bg-zinc-200 disabled:bg-[var(--sidebar-active)] disabled:text-[var(--sidebar-text-muted)]"
         >

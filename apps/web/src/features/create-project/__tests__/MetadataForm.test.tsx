@@ -89,4 +89,40 @@ describe("<MetadataForm />", () => {
     await user.type(inputs[3], "SC{Enter}");
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
+
+  it("renders loading state with spinner and disables submit", () => {
+    render(<MetadataForm onConfirm={() => undefined} loading />);
+    expect(screen.getByText(/Criando…/)).toBeInTheDocument();
+    expect(screen.getByRole("button")).toBeDisabled();
+  });
+
+  it("disables all inputs when loading", () => {
+    render(<MetadataForm onConfirm={() => undefined} loading />);
+    const inputs = screen.getAllByRole("textbox");
+    for (const input of inputs) expect(input).toBeDisabled();
+  });
+
+  it("shows errorMessage inline when provided", () => {
+    render(
+      <MetadataForm
+        onConfirm={() => undefined}
+        errorMessage="Falha ao criar projeto: 500 Internal Server Error"
+      />,
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent(/500 Internal Server Error/);
+  });
+
+  it("does not call onConfirm when loading=true even with valid inputs", async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn();
+    const { rerender } = render(<MetadataForm onConfirm={onConfirm} />);
+    const inputs = screen.getAllByRole("textbox");
+    await user.type(inputs[0], "Acme");
+    await user.type(inputs[1], "Torre A");
+    await user.type(inputs[2], "Floripa");
+
+    rerender(<MetadataForm onConfirm={onConfirm} loading />);
+    await user.click(screen.getByRole("button"));
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
 });

@@ -106,7 +106,10 @@ export function ChatWindow({
     flow.state.step === "awaiting_number_confirmation" &&
     typeof flow.state.suggestedNumber === "number";
   const showDecisionBar = flow.state.step === "awaiting_validation_decision";
-  const showMetadataForm = flow.state.step === "awaiting_metadata";
+  const showMetadataForm =
+    flow.state.step === "awaiting_metadata" || flow.state.step === "creating";
+  const isParsingSheet = flow.state.step === "parsing_spreadsheet";
+  const isCreating = flow.state.step === "creating";
 
   const isEmpty = messages.length === 0 && !isLoading;
 
@@ -118,6 +121,7 @@ export function ChatWindow({
       canCreateProject={canCreateProject}
       acceptingFiles={acceptingFiles}
       isLoading={isLoading}
+      parsing={isParsingSheet}
     />
   );
 
@@ -180,7 +184,15 @@ export function ChatWindow({
               {showMetadataForm ? (
                 <div className="flex justify-start">
                   <div className="px-1">
-                    <MetadataForm onConfirm={(m) => void flow.submitMetadata(m)} />
+                    <MetadataForm
+                      onConfirm={(m) => void flow.submitMetadata(m)}
+                      loading={isCreating}
+                      errorMessage={
+                        flow.state.step === "awaiting_metadata"
+                          ? flow.state.errorMessage ?? null
+                          : null
+                      }
+                    />
                   </div>
                 </div>
               ) : null}

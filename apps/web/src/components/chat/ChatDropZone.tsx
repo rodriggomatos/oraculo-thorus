@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Paperclip, X } from "lucide-react";
+import { Loader2, Paperclip, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 
@@ -14,6 +14,7 @@ type ChatDropZoneProps = {
   onFileAccepted: (file: File) => void;
   onError?: (message: string) => void;
   registerOpenPicker?: (open: () => void) => void;
+  parsing?: boolean;
   className?: string;
   children?: React.ReactNode;
 };
@@ -43,6 +44,7 @@ export function ChatDropZone({
   onFileAccepted,
   onError,
   registerOpenPicker,
+  parsing = false,
   className,
   children,
 }: ChatDropZoneProps): React.ReactElement {
@@ -172,12 +174,23 @@ export function ChatDropZone({
 
       {children}
 
-      {isDragOver && active ? (
+      {isDragOver && active && !parsing ? (
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center rounded-2xl border-2 border-dashed border-[var(--sidebar-active,#3b82f6)] bg-[var(--sidebar-popover-bg,rgba(0,0,0,0.6))]/80 text-[var(--sidebar-text,#fff)]"
         >
           <span className="text-sm font-medium">Solte o arquivo aqui</span>
+        </div>
+      ) : null}
+
+      {parsing ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center gap-2 rounded-2xl border border-[var(--sidebar-border,rgba(255,255,255,0.15))] bg-[var(--sidebar-popover-bg,rgba(0,0,0,0.7))]/90 text-[var(--sidebar-text,#fff)]"
+        >
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+          <span className="text-sm font-medium">Analisando a planilha…</span>
         </div>
       ) : null}
 

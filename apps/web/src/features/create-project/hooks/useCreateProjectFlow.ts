@@ -31,6 +31,7 @@ type FlowAction =
   | { type: "METADATA_RECEIVED"; metadata: ProjectMetadata }
   | { type: "CREATING" }
   | { type: "CREATED"; result: CreateProjectResponse }
+  | { type: "METADATA_SUBMIT_FAILED"; message: string }
   | { type: "ERROR"; message: string };
 
 
@@ -74,7 +75,9 @@ function reducer(
     case "METADATA_RECEIVED":
       return { ...state, metadata: action.metadata, step: "creating" };
     case "CREATED":
-      return { ...state, finalResult: action.result, step: "success" };
+      return { ...state, finalResult: action.result, step: "success", errorMessage: undefined };
+    case "METADATA_SUBMIT_FAILED":
+      return { ...state, step: "awaiting_metadata", errorMessage: action.message };
     case "ERROR":
       return { ...state, errorMessage: action.message, step: "error" };
     default:
@@ -115,6 +118,7 @@ export function useCreateProjectFlow(
   const start = useCallback(async (): Promise<void> => {
     if (state.step !== "idle") return;
     dispatch({ type: "START_REQUESTED" });
+    onAssistantMessage("Consultando próximo número disponível…");
     try {
       const { suggested } = await suggestNumber();
       dispatch({ type: "NUMBER_SUGGESTED", suggested });
@@ -162,6 +166,7 @@ export function useCreateProjectFlow(
       );
       dispatch({ type: "METADATA_RECEIVED", metadata });
       dispatch({ type: "CREATING" });
+      onAssistantMessage("Criando projeto…");
       try {
         const result = await createProject({
           spreadsheetId: state.spreadsheetId ?? "mock-spreadsheet",
@@ -186,8 +191,10 @@ export function useCreateProjectFlow(
         );
       } catch (e) {
         const message = e instanceof Error ? e.message : "Falha ao criar projeto";
-        dispatch({ type: "ERROR", message });
-        onAssistantMessage(`Não consegui criar o projeto: ${message}.`);
+        dispatch({ type: "METADATA_SUBMIT_FAILED", message });
+        onAssistantMessage(
+          `Não consegui criar o projeto: ${message}. O formulário voltou — ajusta e tenta de novo.`,
+        );
       }
     },
     [state.step, state.confirmedNumber, state.spreadsheetId, onAssistantMessage, onUserMessage],
@@ -200,6 +207,7 @@ export function useCreateProjectFlow(
         fileName,
         spreadsheetId,
       });
+      onAssistantMessage("Analisando a planilha de orçamento…");
       try {
         const result = await parseSpreadsheet(spreadsheetId);
         dispatch({ type: "VALIDATION_DONE", result });

@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { Loader2 } from "lucide-react";
 import type { ProjectMetadata } from "./types";
 
 
 export type MetadataFormProps = {
   onConfirm: (metadata: ProjectMetadata) => void;
+  loading?: boolean;
+  errorMessage?: string | null;
   disabled?: boolean;
 };
 
@@ -25,7 +28,7 @@ const REQUIRED: ReadonlySet<FieldKey> = new Set(["cliente", "empreendimento", "c
 
 
 const FIELD_CLASSES =
-  "w-full rounded-md border border-[var(--sidebar-border,rgba(255,255,255,0.15))] bg-[var(--sidebar-popover-bg,rgba(0,0,0,0.4))] px-3 py-2 text-sm text-[var(--sidebar-text)] placeholder:text-[var(--sidebar-text-muted)] outline-none transition-colors focus:border-[var(--sidebar-active,#3b82f6)]";
+  "w-full rounded-md border border-[var(--sidebar-border,rgba(255,255,255,0.15))] bg-[var(--sidebar-popover-bg,rgba(0,0,0,0.4))] px-3 py-2 text-sm text-[var(--sidebar-text)] placeholder:text-[var(--sidebar-text-muted)] outline-none transition-colors focus:border-[var(--sidebar-active,#3b82f6)] disabled:opacity-60";
 
 const FIELD_INVALID_CLASSES =
   "border-red-500/70 focus:border-red-500";
@@ -33,6 +36,8 @@ const FIELD_INVALID_CLASSES =
 
 export function MetadataForm({
   onConfirm,
+  loading = false,
+  errorMessage = null,
   disabled = false,
 }: MetadataFormProps): React.ReactElement {
   const [values, setValues] = useState<Record<FieldKey, string>>({
@@ -42,6 +47,8 @@ export function MetadataForm({
     estado: "",
   });
   const [showErrors, setShowErrors] = useState(false);
+
+  const isDisabled = disabled || loading;
 
   const trimmed = (k: FieldKey): string => values[k].trim();
   const missingRequired = (Array.from(REQUIRED) as FieldKey[]).filter(
@@ -59,7 +66,7 @@ export function MetadataForm({
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
-    if (disabled) return;
+    if (isDisabled) return;
     if (!isValid) {
       setShowErrors(true);
       return;
@@ -77,6 +84,7 @@ export function MetadataForm({
       onSubmit={handleSubmit}
       className="flex w-full max-w-md flex-col gap-3 rounded-2xl border border-[var(--sidebar-border,rgba(255,255,255,0.1))] bg-[var(--sidebar-popover-bg,rgba(0,0,0,0.3))] p-4"
       aria-label="Metadados do projeto"
+      aria-busy={loading}
     >
       {(Object.keys(LABEL_BY_FIELD) as FieldKey[]).map((key) => {
         const isRequired = REQUIRED.has(key);
@@ -95,7 +103,7 @@ export function MetadataForm({
               autoComplete="off"
               autoCapitalize={key === "estado" ? "characters" : "words"}
               spellCheck={false}
-              disabled={disabled}
+              disabled={isDisabled}
               aria-invalid={invalid}
               aria-required={isRequired}
               className={`${FIELD_CLASSES} ${invalid ? FIELD_INVALID_CLASSES : ""}`}
@@ -103,13 +111,28 @@ export function MetadataForm({
           </label>
         );
       })}
+      {errorMessage ? (
+        <p
+          role="alert"
+          className="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300"
+        >
+          {errorMessage}
+        </p>
+      ) : null}
       <div className="flex items-center justify-end gap-2 pt-1">
         <button
           type="submit"
-          disabled={disabled || !isValid}
-          className="rounded-full bg-white px-4 py-2 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={isDisabled || !isValid}
+          className="flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Confirmar
+          {loading ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+              <span>Criando…</span>
+            </>
+          ) : (
+            <span>Confirmar</span>
+          )}
         </button>
       </div>
     </form>

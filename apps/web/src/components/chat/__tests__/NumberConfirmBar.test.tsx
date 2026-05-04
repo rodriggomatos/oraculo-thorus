@@ -91,4 +91,38 @@ describe("<NumberConfirmBar />", () => {
     expect(screen.getByRole("button", { name: /Confirmar 26024/ })).toBeInTheDocument();
     expect(onConfirm).not.toHaveBeenCalled();
   });
+
+  it("after clicking Confirmar, shows spinner and disables both buttons", async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn();
+    render(<NumberConfirmBar suggested={26024} onConfirm={onConfirm} />);
+    await user.click(screen.getByRole("button", { name: /Confirmar 26024/ }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(/Confirmando…/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Confirmando…/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Outro número/ })).toBeDisabled();
+  });
+
+  it("after submitting custom number, shows spinner and disables Cancel + input", async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn();
+    render(<NumberConfirmBar suggested={26024} onConfirm={onConfirm} />);
+    await user.click(screen.getByRole("button", { name: /Outro número/ }));
+    const input = screen.getByLabelText(/Número do projeto/i);
+    await user.type(input, "26099");
+    await user.click(screen.getByRole("button", { name: /Usar este número/ }));
+    expect(onConfirm).toHaveBeenCalledWith(26099);
+    expect(screen.getByText(/Confirmando…/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Cancelar/ })).toBeDisabled();
+    expect(input).toBeDisabled();
+  });
+
+  it("a second click while confirming does not call onConfirm again", async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn();
+    render(<NumberConfirmBar suggested={26024} onConfirm={onConfirm} />);
+    await user.click(screen.getByRole("button", { name: /Confirmar 26024/ }));
+    await user.click(screen.getByRole("button", { name: /Confirmando…/ }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
 });
