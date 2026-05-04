@@ -1,0 +1,121 @@
+"""Unit tests pra validate_against_template (errors + warnings)."""
+
+from decimal import Decimal
+
+from oraculo_ai.scope.types import DisciplinaRow, ParsedOrcamento
+from oraculo_ai.scope.validator import validate_against_template
+
+
+_TEMPLATE: list[str] = [
+    "Hidrossanitário + Drenagem",
+    "SPDA",
+    "Climatização",
+]
+
+
+def _make_row(
+    nome: str,
+    *,
+    legal: str = "executivo",
+    incluir: bool = True,
+    pontos_calculados: Decimal = Decimal("10"),
+    source_row: int = 3,
+) -> DisciplinaRow:
+    return DisciplinaRow(
+        disciplina=nome,
+        incluir=incluir,
+        unificar=None,
+        essencial=False,
+        pontos=Decimal("0"),
+        legal=legal,
+        peso_disciplina=None,
+        ponto_fixo=None,
+        pontos_calculados=pontos_calculados,
+        source_row=source_row,
+    )
+
+
+def test_clean_orcamento_passes() -> None:
+    parsed = ParsedOrcamento(
+        spreadsheet_id="abc",
+        estado="SC",
+        disciplinas=[
+            _make_row("Hidrossanitário + Drenagem"),
+            _make_row("SPDA"),
+            _make_row("Climatização"),
+        ],
+    )
+    result = validate_against_template(parsed, _TEMPLATE)
+    assert result.ok
+    assert result.errors == []
+
+
+def test_disciplina_fora_template_vira_error() -> None:
+    parsed = ParsedOrcamento(
+        spreadsheet_id="abc",
+        estado="SC",
+        disciplinas=[
+            _make_row("Hidrossanitário + Drenagem"),
+            _make_row("Geotermia"),
+        ],
+    )
+    result = validate_against_template(parsed, _TEMPLATE)
+    assert not result.ok
+    codes = [e.code for e in result.errors]
+    assert "DISCIPLINA_FORA_TEMPLATE" in codes
+
+
+def test_legal_invalido_vira_error() -> None:
+    parsed = ParsedOrcamento(
+        spreadsheet_id="abc",
+        estado="SC",
+        disciplinas=[_make_row("SPDA", legal="misto")],
+    )
+    result = validate_against_template(parsed, _TEMPLATE)
+    codes = [e.code for e in result.errors]
+    assert "LEGAL_INVALIDO" in codes
+
+
+def test_estado_invalido_vira_error() -> None:
+    parsed = ParsedOrcamento(
+        spreadsheet_id="abc",
+        estado="XX",
+        disciplinas=[_make_row("SPDA")],
+    )
+    result = validate_against_template(parsed, _TEMPLATE)
+    codes = [e.code for e in result.errors]
+    assert "ESTADO_INVALIDO" in codes
+
+
+def test_disciplina_faltando_vira_warning() -> None:
+    parsed = ParsedOrcamento(
+        spreadsheet_id="abc",
+        estado="SC",
+        disciplinas=[_make_row("SPDA")],
+    )
+    result = validate_against_template(parsed, _TEMPLATE)
+    codes = [w.code for w in result.warnings]
+    assert "DISCIPLINA_FALTANDO" in codes
+
+
+def test_incluir_sem_pontos_vira_warning() -> None:
+    parsed = ParsedOrcamento(
+        spreadsheet_id="abc",
+        estado="SC",
+        disciplinas=[
+            _make_row("SPDA", incluir=True, pontos_calculados=Decimal("0")),
+        ],
+    )
+    result = validate_against_template(parsed, _TEMPLATE)
+    codes = [w.code for w in result.warnings]
+    assert "INCLUIR_SEM_PONTOS" in codes
+
+
+def test_estado_none_passa() -> None:
+    parsed = ParsedOrcamento(
+        spreadsheet_id="abc",
+        estado=None,
+        disciplinas=[_make_row("Hidrossanitário + Drenagem"), _make_row("SPDA"), _make_row("Climatização")],
+    )
+    result = validate_against_template(parsed, _TEMPLATE)
+    assert result.ok
