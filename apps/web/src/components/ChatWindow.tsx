@@ -6,6 +6,7 @@ import { InputArea } from "./chat/InputArea";
 import { FlowDecisionBar } from "./chat/FlowDecisionBar";
 import { Message as MessageComponent } from "./Message";
 import { ThinkingIndicator } from "./ThinkingIndicator";
+import { MetadataForm } from "@/features/create-project/MetadataForm";
 import { useUserPermissions } from "@/features/create-project/hooks/useUserPermissions";
 import { useCreateProjectFlow } from "@/features/create-project/hooks/useCreateProjectFlow";
 import type { Message } from "@/lib/types";
@@ -101,6 +102,7 @@ export function ChatWindow({
   const acceptingFiles = flow.isActive;
 
   const showDecisionBar = flow.state.step === "awaiting_validation_decision";
+  const showMetadataForm = flow.state.step === "awaiting_metadata";
 
   const isEmpty = messages.length === 0 && !isLoading;
 
@@ -158,6 +160,13 @@ export function ChatWindow({
                       onContinue={() => void flow.decideContinue()}
                       onFix={() => flow.decideFix()}
                     />
+                  </div>
+                </div>
+              ) : null}
+              {showMetadataForm ? (
+                <div className="flex justify-start">
+                  <div className="px-1">
+                    <MetadataForm onConfirm={(m) => void flow.submitMetadata(m)} />
                   </div>
                 </div>
               ) : null}

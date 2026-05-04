@@ -3,7 +3,6 @@
 import { useCallback, useReducer } from "react";
 import {
   createProject,
-  parseMetadataFreeText,
   parseSpreadsheet,
   suggestNumber,
 } from "../mock";
@@ -13,6 +12,9 @@ import type {
   ProjectMetadata,
   ValidationResult,
 } from "../types";
+
+
+const METADATA_PROMPT = "Pra finalizar, me passa os dados do projeto.";
 
 
 type FlowAction =
@@ -96,6 +98,8 @@ export interface UseCreateProjectFlowReturn {
   start: () => Promise<void>;
   submitUserText: (text: string) => Promise<void>;
   submitFile: (file: File) => Promise<void>;
+  confirmNumber: (confirmed: number) => void;
+  submitMetadata: (metadata: ProjectMetadata) => Promise<void>;
   decideContinue: () => Promise<void>;
   decideFix: () => void;
   reset: () => void;
@@ -124,18 +128,20 @@ export function useCreateProjectFlow(
     }
   }, [state.step, onAssistantMessage]);
 
-  const advanceFromNumberConfirmation = useCallback(
-    (text: string): void => {
-      const numberMatch = text.match(/\b(\d{4,6})\b/);
-      const confirmed = numberMatch
-        ? Number.parseInt(numberMatch[1], 10)
-        : state.suggestedNumber;
-      if (typeof confirmed !== "number" || Number.isNaN(confirmed)) {
+  const confirmNumber = useCallback(
+    (confirmed: number): void => {
+      if (state.step !== "awaiting_number_confirmation") return;
+      if (!Number.isInteger(confirmed) || confirmed <= 0) {
         onAssistantMessage(
-          "Não consegui identificar um número de projeto na sua resposta. Pode confirmar com um número (ex: 26024)?",
+          "Número inválido. Use 5 dígitos (ex: 26024).",
         );
         return;
       }
+      onUserMessage(
+        confirmed === state.suggestedNumber
+          ? `Confirmar ${confirmed}`
+          : `Usar ${confirmed}`,
+      );
       dispatch({ type: "NUMBER_CONFIRMED", confirmed });
       onAssistantMessage(
         `Perfeito, número **${confirmed}**. Agora me envia a planilha de orçamento. Você pode:\n\n` +
@@ -144,18 +150,16 @@ export function useCreateProjectFlow(
           "- Colar a URL do Google Sheets diretamente",
       );
     },
-    [state.suggestedNumber, onAssistantMessage],
+    [state.step, state.suggestedNumber, onAssistantMessage, onUserMessage],
   );
 
-  const advanceFromMetadata = useCallback(
-    async (text: string): Promise<void> => {
-      const metadata = parseMetadataFreeText(text);
-      if (!metadata.cliente && !metadata.empreendimento && !metadata.cidade) {
-        onAssistantMessage(
-          "Não consegui extrair Cliente, Empreendimento e Cidade da sua resposta. Pode mandar nesse formato?\n\n- Cliente: Acme\n- Empreendimento: Torre A\n- Cidade: Florianópolis",
-        );
-        return;
-      }
+  const submitMetadata = useCallback(
+    async (metadata: ProjectMetadata): Promise<void> => {
+      if (state.step !== "awaiting_metadata") return;
+      onUserMessage(
+        `Cliente: ${metadata.cliente} • Empreendimento: ${metadata.empreendimento} • Cidade: ${metadata.cidade}` +
+          (metadata.estado ? ` • Estado: ${metadata.estado}` : ""),
+      );
       dispatch({ type: "METADATA_RECEIVED", metadata });
       dispatch({ type: "CREATING" });
       try {
@@ -175,6 +179,7 @@ export function useCreateProjectFlow(
             `- Cliente: ${metadata.cliente || "—"}\n` +
             `- Empreendimento: ${metadata.empreendimento || "—"}\n` +
             `- Cidade: ${metadata.cidade || "—"}\n` +
+            (metadata.estado ? `- Estado: ${metadata.estado}\n` : "") +
             `- Total contratado: R$ ${valor}\n` +
             `- Margem: ${margemPercent}%\n\n` +
             `⚠️ A pasta no Drive ainda precisa ser criada manualmente. No próximo sprint isso será automático.`,
@@ -185,7 +190,7 @@ export function useCreateProjectFlow(
         onAssistantMessage(`Não consegui criar o projeto: ${message}.`);
       }
     },
-    [state.confirmedNumber, state.spreadsheetId, onAssistantMessage],
+    [state.step, state.confirmedNumber, state.spreadsheetId, onAssistantMessage, onUserMessage],
   );
 
   const processSpreadsheet = useCallback(
@@ -199,9 +204,7 @@ export function useCreateProjectFlow(
         const result = await parseSpreadsheet(spreadsheetId);
         dispatch({ type: "VALIDATION_DONE", result });
         if (result.warnings.length === 0 && result.errors.length === 0) {
-          onAssistantMessage(
-            "Recebi a planilha sem inconsistências. Pra finalizar, preciso de:\n- Cliente?\n- Empreendimento?\n- Cidade?",
-          );
+          onAssistantMessage(`Recebi a planilha sem inconsistências. ${METADATA_PROMPT}`);
           return;
         }
         const issueCount = result.warnings.length + result.errors.length;
@@ -225,7 +228,9 @@ export function useCreateProjectFlow(
       onUserMessage(text);
       switch (state.step) {
         case "awaiting_number_confirmation":
-          advanceFromNumberConfirmation(text);
+          onAssistantMessage(
+            "Use os botões acima pra confirmar o número sugerido ou escolher outro.",
+          );
           return;
         case "awaiting_spreadsheet": {
           const urlMatch = text.match(
@@ -250,7 +255,9 @@ export function useCreateProjectFlow(
           );
           return;
         case "awaiting_metadata":
-          await advanceFromMetadata(text);
+          onAssistantMessage(
+            "Use o formulário acima pra mandar Cliente, Empreendimento e Cidade.",
+          );
           return;
         default:
           return;
@@ -258,8 +265,6 @@ export function useCreateProjectFlow(
     },
     [
       state.step,
-      advanceFromNumberConfirmation,
-      advanceFromMetadata,
       processSpreadsheet,
       onAssistantMessage,
       onUserMessage,
@@ -285,9 +290,7 @@ export function useCreateProjectFlow(
     if (state.step !== "awaiting_validation_decision") return;
     onUserMessage("Continuar mesmo assim");
     dispatch({ type: "USER_DECIDED_CONTINUE" });
-    onAssistantMessage(
-      "Combinado. Pra finalizar, preciso de:\n- Cliente?\n- Empreendimento?\n- Cidade?",
-    );
+    onAssistantMessage(`Combinado. ${METADATA_PROMPT}`);
   }, [state.step, onAssistantMessage, onUserMessage]);
 
   const decideFix = useCallback((): void => {
@@ -309,6 +312,8 @@ export function useCreateProjectFlow(
     start,
     submitUserText,
     submitFile,
+    confirmNumber,
+    submitMetadata,
     decideContinue,
     decideFix,
     reset,

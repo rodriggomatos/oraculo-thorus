@@ -2,7 +2,6 @@ import { getBrowserSupabase } from "@/lib/supabase/client";
 import type {
   CreateProjectRequest,
   CreateProjectResponse,
-  ProjectMetadata,
   SuggestNumberResponse,
   ValidationResult,
 } from "./types";
@@ -76,46 +75,4 @@ export async function createProject(
     throw new Error(await extractErrorMessage(response, "Falha ao criar projeto"));
   }
   return (await response.json()) as CreateProjectResponse;
-}
-
-
-export function parseMetadataFreeText(text: string): ProjectMetadata {
-  const lines = text
-    .split(/[\n;]/)
-    .map((l) => l.trim())
-    .filter(Boolean);
-
-  const findValue = (keyPatterns: RegExp[]): string => {
-    for (const line of lines) {
-      for (const pattern of keyPatterns) {
-        const match = line.match(pattern);
-        if (match && match[1]) return match[1].trim();
-      }
-    }
-    return "";
-  };
-
-  const cliente = findValue([
-    /cliente[:\s-]+(.+)/i,
-    /^c(?:liente)?:\s*(.+)/i,
-  ]);
-  const empreendimento = findValue([
-    /empreendimento[:\s-]+(.+)/i,
-    /^e:\s*(.+)/i,
-  ]);
-  const cidade = findValue([
-    /cidade[:\s-]+(.+)/i,
-    /^cid?:\s*(.+)/i,
-  ]);
-
-  if (cliente || empreendimento || cidade) {
-    return { cliente, empreendimento, cidade };
-  }
-
-  const fallback = lines.length >= 3 ? lines : [text];
-  return {
-    cliente: fallback[0] ?? "",
-    empreendimento: fallback[1] ?? "",
-    cidade: fallback[2] ?? "",
-  };
 }
