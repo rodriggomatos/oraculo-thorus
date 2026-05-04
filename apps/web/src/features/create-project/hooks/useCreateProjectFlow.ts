@@ -9,12 +9,24 @@ import {
 import type {
   CreateProjectResponse,
   CreateProjectState,
+  CreateProjectStep,
   ProjectMetadata,
   ValidationResult,
 } from "../types";
 
 
 const METADATA_PROMPT = "Pra finalizar, me passa os dados do projeto.";
+
+
+const RUNNING_STEPS: ReadonlySet<CreateProjectStep> = new Set([
+  "awaiting_number_confirmation",
+  "awaiting_spreadsheet",
+  "parsing_spreadsheet",
+  "showing_validation",
+  "awaiting_validation_decision",
+  "awaiting_metadata",
+  "creating",
+]);
 
 
 type FlowAction =
@@ -116,7 +128,10 @@ export function useCreateProjectFlow(
   const { onAssistantMessage, onUserMessage } = options;
 
   const start = useCallback(async (): Promise<void> => {
-    if (state.step !== "idle") return;
+    if (RUNNING_STEPS.has(state.step)) return;
+    if (state.step !== "idle") {
+      dispatch({ type: "RESET" });
+    }
     dispatch({ type: "START_REQUESTED" });
     onAssistantMessage("Consultando próximo número disponível…");
     try {
