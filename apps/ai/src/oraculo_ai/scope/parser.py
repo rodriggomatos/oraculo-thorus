@@ -28,7 +28,9 @@ SpreadsheetNotFound vira PermissionError com mensagem orientando o user.
 """
 
 import asyncio
+import json
 from decimal import Decimal, InvalidOperation
+from pathlib import Path
 from typing import Any
 
 from googleapiclient.errors import HttpError
@@ -87,6 +89,25 @@ def _trim(value: Any) -> str | None:
     return text or None
 
 
+def _resolve_service_account_email(raw: str) -> str | None:
+    """Best-effort: extrai client_email do JSON da service account (path ou inline)."""
+    stripped = (raw or "").strip()
+    if not stripped:
+        return None
+    try:
+        if stripped.startswith("{"):
+            data = json.loads(stripped)
+        else:
+            path = Path(stripped)
+            if not path.is_file():
+                return None
+            data = json.loads(path.read_text(encoding="utf-8"))
+        email = data.get("client_email")
+        return str(email) if email else None
+    except Exception:
+        return None
+
+
 async def parse_orcamento_from_sheets(spreadsheet_id: str) -> ParsedOrcamento:
     settings = get_settings()
     if not settings.google_service_account_json:
@@ -109,10 +130,15 @@ async def parse_orcamento_from_sheets(spreadsheet_id: str) -> ParsedOrcamento:
         except HttpError as exc:
             status = getattr(getattr(exc, "resp", None), "status", None)
             if status in (403, 404):
+                sa_email = _resolve_service_account_email(settings.google_service_account_json)
+                hint = (
+                    f" Compartilhe-a como Leitor com {sa_email}."
+                    if sa_email
+                    else " Compartilhe-a como Leitor com a service account configurada."
+                )
                 raise PermissionError(
-                    f"Não consegui acessar a planilha {spreadsheet_id!r}. "
-                    f"Compartilhe-a como Leitor com o e-mail da service account "
-                    f"(veja GOOGLE_SERVICE_ACCOUNT_JSON.client_email)."
+                    f"Não consigo acessar a planilha (id {spreadsheet_id!r})."
+                    + hint
                 ) from exc
             raise
         out: dict[str, list[list[Any]]] = {}
