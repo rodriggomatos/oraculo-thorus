@@ -10,6 +10,7 @@ Operações principais:
 Acesso ao pool central via oraculo_ai.core.db.get_pool().
 """
 
+import logging
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
@@ -18,7 +19,11 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Json
 
 from oraculo_ai.core.db import get_pool
+from oraculo_ai.projects.drive import list_project_numbers_from_drive
 from oraculo_ai.scope.types import DisciplinaRow, ParsedOrcamento
+
+
+_log = logging.getLogger(__name__)
 
 
 class ProjectScopeRow:
@@ -64,15 +69,52 @@ class ProjectScopeRow:
         }
 
 
-async def get_next_project_number() -> int:
+async def _max_project_number_in_db() -> int:
     pool = get_pool()
     async with pool.connection() as conn:
         async with conn.cursor() as cur:
-            await cur.execute("SELECT COALESCE(MAX(project_number), 26000) + 1 AS next FROM projects")
+            await cur.execute(
+                "SELECT COALESCE(MAX(project_number), 26000) AS max_number FROM projects"
+            )
             row = await cur.fetchone()
-            if row is None:
-                return 26001
-            return int(row["next"]) if isinstance(row, dict) else int(row[0])
+    if row is None:
+        return 26000
+    return int(row["max_number"]) if isinstance(row, dict) else int(row[0])
+
+
+async def get_next_project_number() -> int:
+    """Sugere o próximo número de projeto.
+
+    Fonte de verdade: o Drive `107_PROJETOS 2026`, NÃO o banco. A tabela
+    `projects` está incompleta (só contém projetos já ingeridos), enquanto
+    o Drive tem TODAS as pastas físicas — incluindo as criadas manualmente
+    sem ingestão correspondente.
+
+    Estratégia: MAX(numbers do Drive ∪ numbers do DB) + 1. A união cobre o
+    edge case onde alguém criou um projeto via API (foi pro DB mas a pasta
+    no Drive talvez ainda não exista).
+
+    Fallback: se o Drive falhar (rede, scope, permissão), usa só o DB e loga
+    warning. Melhor sugerir baixo do que travar o flow.
+    """
+    db_max = await _max_project_number_in_db()
+
+    try:
+        drive_numbers = await list_project_numbers_from_drive()
+    except Exception as exc:
+        _log.warning(
+            "list_project_numbers_from_drive failed (%s: %s); falling back to DB MAX",
+            type(exc).__name__,
+            exc,
+        )
+        return max(db_max, 26000) + 1
+
+    if not drive_numbers:
+        _log.warning("Drive returned no project folders; falling back to DB MAX")
+        return max(db_max, 26000) + 1
+
+    drive_max = drive_numbers[0]
+    return max(drive_max, db_max) + 1
 
 
 async def get_scope_template_names() -> list[str]:

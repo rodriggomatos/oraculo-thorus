@@ -51,6 +51,8 @@ class Settings(BaseSettings):
     supabase_jwt_secret: str = ""
     supabase_jwks_url: str = ""
 
+    thorus_drive_root_id: str = "0AGS3i6FJiluJUk9PVA"
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
