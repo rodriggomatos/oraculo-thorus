@@ -14,7 +14,11 @@ from oraculo_ai.agents.qa.mcp_client import get_drive_tools
 from oraculo_ai.agents.qa.schema import Citation, QAAnswer, QAQuery, UserContext
 from oraculo_ai.agents.qa.tools import (
     find_project_by_name,
+    get_active_ldp_disciplines_tool,
+    get_project_scope_history_tool,
+    get_project_scope_tool,
     list_projects,
+    make_create_project,
     make_register_definition,
     search_definitions,
 )
@@ -133,6 +137,47 @@ NÃO inclua a recomendação quando status=FOUND ou status=NOT_FOUND. Apenas UNC
 
 NÃO use tools de Drive pra responder perguntas técnicas sobre definições — pra isso, use search_definitions normalmente. Drive tools são pra DESCOBRIR arquivos/links.
 
+DOMÍNIOS DE DADOS — qual tool usar:
+
+PROJETOS — metadados (tabela `projects`)
+Tools: list_projects, find_project_by_name
+Use quando user pergunta dados gerais (cliente, área, estado, fluxo).
+
+ESCOPO CONTRATADO — comercial (tabela `project_scope`)
+Tools: get_project_scope, get_project_scope_history
+Use quando user pergunta sobre PREÇO, VALOR, ORÇAMENTO, MARGEM, PONTOS,
+DISCIPLINAS CONTRATADAS, "o que foi vendido", "quanto custou".
+Cada projeto tem versões; `get_project_scope` retorna a vigente
+(is_current=TRUE), `get_project_scope_history` retorna a evolução das versões.
+
+LISTA DE DEFINIÇÕES (LDP) — decisões TÉCNICAS de execução (tabela `definitions`)
+Tools: search_definitions, register_definition
+Use quando user pergunta sobre MATERIAIS, ESPECIFICAÇÕES, ITEMS específicos
+(HALL01, COZ02), DECISÕES DE EXECUÇÃO, "qual o material", "tipo de tubulação".
+
+CRIAÇÃO DE PROJETO — fluxo agêntico
+Tool: create_project (REQUER permissão `create_project` no perfil)
+Use APENAS quando user pedir explicitamente pra criar projeto novo. A tool tem
+3 pontos de pausa (interrupts): confirma número, decide sobre validação,
+coleta metadados. Ela retorna `status` que indica resultado:
+'success' / 'permission_denied' / 'spreadsheet_inaccessible' /
+'cancelled_by_user' / 'already_exists' / 'error'. Comunica em prosa.
+
+REGRA CRÍTICA — FILTRO LDP POR ESCOPO CONTRATADO
+
+Categorias da LDP: Hidráulica, Sanitário, Piscina, Elétrico/Comunicação, SPDA,
+Preventivo, Gás, Sprinkler, Climatização, Geral.
+
+"Geral" sempre ativa. Outras categorias só ficam ativas se alguma disciplina do
+escopo contratado tiver `incluir=TRUE` E mapear pra elas via `scope_to_ldp_discipline`.
+
+Quando responder sobre LDP de um projeto específico, USE a tool
+`get_active_ldp_disciplines(project_number)` ANTES — ela executa a query
+determinística e retorna as categorias ativas. Não infira, NÃO chute. Se a
+categoria pedida pelo user (ex: "definições de hidráulica") não estiver na
+lista retornada, responda claramente: "Hidráulica não foi contratada no escopo
+deste projeto — nada a buscar na LDP."
+
 USUÁRIO ATUAL:
 
 Contexto da sessão (NÃO confundir com o sujeito da pergunta — o usuário atual é quem está conversando com você):
@@ -190,6 +235,7 @@ async def answer_question(
     drive_tools = await get_drive_tools()
 
     register_definition_bound = make_register_definition(effective_user.user_id)
+    create_project_bound = make_create_project(effective_user)
 
     agent = create_agent(
         model=llm,
@@ -198,6 +244,10 @@ async def answer_question(
             list_projects,
             find_project_by_name,
             register_definition_bound,
+            create_project_bound,
+            get_project_scope_tool,
+            get_project_scope_history_tool,
+            get_active_ldp_disciplines_tool,
             *drive_tools,
         ],
         system_prompt=_render_system_prompt(effective_user),
