@@ -109,6 +109,7 @@ export function useCreateProjectFlow(
   const { onAssistantMessage, onUserMessage } = options;
 
   const start = useCallback(async (): Promise<void> => {
+    if (state.step !== "idle") return;
     dispatch({ type: "START_REQUESTED" });
     try {
       const { suggested } = await suggestNumber();
@@ -121,7 +122,7 @@ export function useCreateProjectFlow(
       dispatch({ type: "ERROR", message });
       onAssistantMessage(`Não consegui sugerir um número agora: ${message}.`);
     }
-  }, [onAssistantMessage]);
+  }, [state.step, onAssistantMessage]);
 
   const advanceFromNumberConfirmation = useCallback(
     (text: string): void => {
