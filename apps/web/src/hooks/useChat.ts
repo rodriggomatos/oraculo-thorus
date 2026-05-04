@@ -25,6 +25,8 @@ export type UseChatReturn = {
   newThread: () => void;
   deleteThread: (threadId: string) => void;
   renameThread: (threadId: string, newTitle: string) => void;
+  appendUserMessage: (content: string) => void;
+  appendAssistantMessage: (content: string) => void;
 };
 
 
@@ -120,6 +122,28 @@ export function useChat(): UseChatReturn {
     setThreads(listThreads());
   }, []);
 
+  const appendUserMessage = useCallback((content: string): void => {
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "user",
+        content,
+        timestamp: new Date().toISOString(),
+      },
+    ]);
+  }, []);
+
+  const appendAssistantMessage = useCallback((content: string): void => {
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content,
+        timestamp: new Date().toISOString(),
+      },
+    ]);
+  }, []);
+
   return {
     threads,
     threadId,
@@ -130,5 +154,7 @@ export function useChat(): UseChatReturn {
     newThread,
     deleteThread,
     renameThread,
+    appendUserMessage,
+    appendAssistantMessage,
   };
 }

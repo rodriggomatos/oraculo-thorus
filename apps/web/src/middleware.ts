@@ -19,7 +19,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       getAll() {
         return request.cookies.getAll();
       },
-      setAll(items) {
+      setAll(items: Array<{ name: string; value: string; options?: Record<string, unknown> }>) {
         for (const { name, value } of items) {
           request.cookies.set(name, value);
         }

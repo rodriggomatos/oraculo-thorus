@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { ArrowUp, FolderOpen, ListTodo, Plus, Search } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { FolderOpen, ListTodo, Search } from "lucide-react";
+import { InputArea } from "./chat/InputArea";
+import { FlowDecisionBar } from "./chat/FlowDecisionBar";
 import { Message as MessageComponent } from "./Message";
 import { ThinkingIndicator } from "./ThinkingIndicator";
+import { useUserPermissions } from "@/features/create-project/hooks/useUserPermissions";
+import { useCreateProjectFlow } from "@/features/create-project/hooks/useCreateProjectFlow";
 import type { Message } from "@/lib/types";
 
 
@@ -12,6 +16,8 @@ type Props = {
   messages: Message[];
   isLoading: boolean;
   onSend: (content: string) => Promise<void>;
+  onAppendUser: (content: string) => void;
+  onAppendAssistant: (content: string) => void;
 };
 
 
@@ -42,13 +48,24 @@ const SUGGESTIONS: Suggestion[] = [
 
 
 export function ChatWindow({
+  threadId,
   messages,
   isLoading,
   onSend,
+  onAppendUser,
+  onAppendAssistant,
 }: Props): React.ReactElement {
-  const [value, setValue] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { canCreateProject } = useUserPermissions();
+
+  const flow = useCreateProjectFlow({
+    onAssistantMessage: onAppendAssistant,
+    onUserMessage: onAppendUser,
+  });
+
+  useEffect(() => {
+    flow.reset();
+  }, [threadId, flow]);
 
   useEffect(() => {
     if (!scrollRef.current) return;
@@ -58,64 +75,48 @@ export function ChatWindow({
     });
   }, [messages, isLoading]);
 
-  useEffect(() => {
-    if (!textareaRef.current) return;
-    textareaRef.current.style.height = "auto";
-    textareaRef.current.style.height = `${Math.min(
-      textareaRef.current.scrollHeight,
-      200,
-    )}px`;
-  }, [value]);
-
-  const handleSubmit = async (): Promise<void> => {
-    const trimmed = value.trim();
-    if (!trimmed || isLoading) return;
-    setValue("");
-    await onSend(trimmed);
+  const handleSend = async (content: string): Promise<void> => {
+    if (flow.isActive) {
+      await flow.submitUserText(content);
+      return;
+    }
+    await onSend(content);
   };
 
-  const fillSuggestion = (prompt: string): void => {
-    setValue(prompt);
-    textareaRef.current?.focus();
+  const handleFileAccepted = async (file: File): Promise<void> => {
+    if (!flow.isActive) {
+      onAppendAssistant(
+        "Recebi o arquivo, mas não há fluxo ativo aguardando upload. Inicie 'Criar projeto novo' no menu `+` → Agente.",
+      );
+      return;
+    }
+    await flow.submitFile(file);
   };
+
+  const handleStartCreateProject = (): void => {
+    void flow.start();
+  };
+
+  const acceptingFiles = flow.isActive;
+
+  const showDecisionBar = flow.state.step === "awaiting_validation_decision";
 
   const isEmpty = messages.length === 0 && !isLoading;
 
-  const pillInput = (
-    <div className="flex items-end gap-2 w-full rounded-3xl bg-[var(--sidebar-popover-bg)] px-3 py-2">
-      <button
-        type="button"
-        aria-label="Anexar"
-        className="p-2 rounded-full text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text)] hover:bg-[var(--sidebar-hover)] shrink-0 transition-colors"
-      >
-        <Plus className="h-5 w-5" />
-      </button>
-      <textarea
-        ref={textareaRef}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            void handleSubmit();
-          }
-        }}
-        placeholder="Pergunte alguma coisa"
-        className="flex-1 bg-transparent text-[var(--sidebar-text)] placeholder:text-[var(--sidebar-text-muted)] outline-none resize-none min-h-[28px] max-h-[200px] py-2 self-center"
-        rows={1}
-        disabled={isLoading}
-      />
-      <button
-        type="button"
-        onClick={() => void handleSubmit()}
-        disabled={!value.trim() || isLoading}
-        aria-label="Enviar"
-        className="p-2 rounded-full bg-white text-zinc-900 hover:bg-zinc-200 disabled:bg-[var(--sidebar-active)] disabled:text-[var(--sidebar-text-muted)] shrink-0 transition-colors"
-      >
-        <ArrowUp className="h-4 w-4" />
-      </button>
-    </div>
+  const inputArea = (
+    <InputArea
+      onSend={handleSend}
+      onFileAccepted={handleFileAccepted}
+      onCreateProject={handleStartCreateProject}
+      canCreateProject={canCreateProject}
+      acceptingFiles={acceptingFiles}
+      isLoading={isLoading}
+    />
   );
+
+  const fillSuggestion = (prompt: string): void => {
+    void onSend(prompt);
+  };
 
   return (
     <main className="flex-1 flex flex-col bg-[var(--main-bg)] text-[var(--sidebar-text)] overflow-hidden">
@@ -125,7 +126,7 @@ export function ChatWindow({
             <h1 className="text-3xl font-medium tracking-tight text-[var(--sidebar-text)]">
               Como posso ajudar?
             </h1>
-            <div className="w-full">{pillInput}</div>
+            <div className="w-full">{inputArea}</div>
             <div className="flex flex-wrap items-center justify-center gap-2">
               {SUGGESTIONS.map((s) => (
                 <button
@@ -149,10 +150,20 @@ export function ChatWindow({
                 <MessageComponent key={i} message={m} />
               ))}
               {isLoading && <ThinkingIndicator />}
+              {showDecisionBar ? (
+                <div className="flex justify-start">
+                  <div className="px-1">
+                    <FlowDecisionBar
+                      onContinue={() => void flow.decideContinue()}
+                      onFix={() => flow.decideFix()}
+                    />
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
           <div className="px-6 pb-4">
-            <div className="max-w-3xl mx-auto">{pillInput}</div>
+            <div className="max-w-3xl mx-auto">{inputArea}</div>
           </div>
         </>
       )}

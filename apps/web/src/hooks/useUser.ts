@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 
 export type AuthUser = {
@@ -24,7 +25,7 @@ export function useUser(): { user: AuthUser | null; loading: boolean } {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let supabase;
+    let supabase: SupabaseClient;
     try {
       supabase = getBrowserSupabase();
     } catch {

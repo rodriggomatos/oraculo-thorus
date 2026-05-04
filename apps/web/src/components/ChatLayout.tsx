@@ -29,6 +29,8 @@ export function ChatLayout(): React.ReactElement {
         messages={chat.messages}
         isLoading={chat.isLoading}
         onSend={chat.sendMessage}
+        onAppendUser={chat.appendUserMessage}
+        onAppendAssistant={chat.appendAssistantMessage}
       />
     </div>
   );
