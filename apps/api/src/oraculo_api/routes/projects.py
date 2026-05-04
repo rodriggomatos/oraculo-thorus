@@ -50,6 +50,7 @@ class ProjectMetadataPayload(BaseModel):
     cliente: str
     empreendimento: str
     cidade: str
+    estado: str | None = None
 
 
 class CreateProjectRequest(BaseModel):
@@ -118,13 +119,16 @@ async def create_project_endpoint(
         f"{body.metadata.empreendimento}"
     )
 
+    form_estado = (body.metadata.estado or "").strip() or None
+    estado = form_estado if form_estado is not None else parsed.estado
+
     result: dict[str, Any] = await create_project_with_scope(
         project_number=body.confirmed_number,
         name=name,
         client=body.metadata.cliente,
         empreendimento=body.metadata.empreendimento,
         cidade=body.metadata.cidade,
-        estado=parsed.estado,
+        estado=estado,
         area_m2=parsed.area_m2,
         fluxo=parsed.fluxo,
         custo_fator=parsed.custo_fator,
