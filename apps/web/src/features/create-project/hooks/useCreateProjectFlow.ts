@@ -169,13 +169,14 @@ export function useCreateProjectFlow(
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
         });
+        const margemPercent = (result.margem * 100).toFixed(2);
         onAssistantMessage(
           `✅ Projeto **${result.projectNumber}** criado.\n\n` +
             `- Cliente: ${metadata.cliente || "—"}\n` +
             `- Empreendimento: ${metadata.empreendimento || "—"}\n` +
             `- Cidade: ${metadata.cidade || "—"}\n` +
-            `- Total contratado: R$ ${valor} (mock)\n` +
-            `- Margem: ${result.margem.toFixed(2)}% (mock)\n\n` +
+            `- Total contratado: R$ ${valor}\n` +
+            `- Margem: ${margemPercent}%\n\n` +
             `⚠️ A pasta no Drive ainda precisa ser criada manualmente. No próximo sprint isso será automático.`,
         );
       } catch (e) {
