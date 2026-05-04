@@ -137,7 +137,10 @@ export function useCreateProjectFlow(
       }
       dispatch({ type: "NUMBER_CONFIRMED", confirmed });
       onAssistantMessage(
-        `Perfeito, número **${confirmed}**. Agora me envia a planilha de orçamento — você pode arrastar o arquivo \`.gsheet\` aqui na conversa ou clicar em "Anexar arquivo" no menu \`+\`.`,
+        `Perfeito, número **${confirmed}**. Agora me envia a planilha de orçamento. Você pode:\n\n` +
+          "- Arrastar o arquivo `.gsheet` aqui na conversa\n" +
+          "- Clicar em **Anexar arquivo** no menu `+`\n" +
+          "- Colar a URL do Google Sheets diretamente",
       );
     },
     [state.suggestedNumber, onAssistantMessage],
@@ -183,6 +186,38 @@ export function useCreateProjectFlow(
     [state.confirmedNumber, state.spreadsheetId, onAssistantMessage],
   );
 
+  const processSpreadsheet = useCallback(
+    async (spreadsheetId: string, fileName: string): Promise<void> => {
+      dispatch({
+        type: "SPREADSHEET_RECEIVED",
+        fileName,
+        spreadsheetId,
+      });
+      try {
+        const result = await parseSpreadsheet(spreadsheetId);
+        dispatch({ type: "VALIDATION_DONE", result });
+        if (result.warnings.length === 0 && result.errors.length === 0) {
+          onAssistantMessage(
+            "Recebi a planilha sem inconsistências. Pra finalizar, preciso de:\n- Cliente?\n- Empreendimento?\n- Cidade?",
+          );
+          return;
+        }
+        const issueCount = result.warnings.length + result.errors.length;
+        const lines: string[] = [`Recebi a planilha. Encontrei ${issueCount} inconsistência(s):`, ""];
+        for (const w of result.warnings) lines.push(`⚠️ ${w.message}`);
+        for (const e of result.errors) lines.push(`❌ ${e.message}`);
+        lines.push("");
+        lines.push("Continuo mesmo assim, ou você quer corrigir antes?");
+        onAssistantMessage(lines.join("\n"));
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "Falha ao validar planilha";
+        dispatch({ type: "ERROR", message });
+        onAssistantMessage(`Não consegui validar a planilha: ${message}.`);
+      }
+    },
+    [onAssistantMessage],
+  );
+
   const submitUserText = useCallback(
     async (text: string): Promise<void> => {
       onUserMessage(text);
@@ -190,11 +225,23 @@ export function useCreateProjectFlow(
         case "awaiting_number_confirmation":
           advanceFromNumberConfirmation(text);
           return;
-        case "awaiting_spreadsheet":
+        case "awaiting_spreadsheet": {
+          const urlMatch = text.match(
+            /docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/,
+          );
+          if (urlMatch) {
+            const spreadsheetId = urlMatch[1];
+            await processSpreadsheet(spreadsheetId, `Sheets ${spreadsheetId}`);
+            return;
+          }
           onAssistantMessage(
-            "Estou aguardando a planilha — você pode arrastar o arquivo `.gsheet` aqui ou usar o menu `+` → Anexar arquivo.",
+            "Não reconheci essa mensagem como uma planilha. Você pode:\n\n" +
+              "- Arrastar o arquivo `.gsheet` aqui na conversa\n" +
+              "- Clicar em **Anexar arquivo** no menu `+`\n" +
+              "- Colar a URL completa do Google Sheets (ex: `https://docs.google.com/spreadsheets/d/.../edit`)",
           );
           return;
+        }
         case "awaiting_validation_decision":
           onAssistantMessage(
             "Use os botões acima pra escolher: continuar mesmo assim ou corrigir antes.",
@@ -207,7 +254,14 @@ export function useCreateProjectFlow(
           return;
       }
     },
-    [state.step, advanceFromNumberConfirmation, advanceFromMetadata, onAssistantMessage, onUserMessage],
+    [
+      state.step,
+      advanceFromNumberConfirmation,
+      advanceFromMetadata,
+      processSpreadsheet,
+      onAssistantMessage,
+      onUserMessage,
+    ],
   );
 
   const submitFile = useCallback(
@@ -220,33 +274,9 @@ export function useCreateProjectFlow(
       }
       onUserMessage(`📎 ${file.name}`);
       const spreadsheetId = `mock-${file.name}-${Date.now()}`;
-      dispatch({
-        type: "SPREADSHEET_RECEIVED",
-        fileName: file.name,
-        spreadsheetId,
-      });
-      try {
-        const result = await parseSpreadsheet(spreadsheetId);
-        dispatch({ type: "VALIDATION_DONE", result });
-        if (result.warnings.length === 0 && result.errors.length === 0) {
-          onAssistantMessage(
-            "Recebi a planilha sem inconsistências. Pra finalizar, preciso de:\n- Cliente?\n- Empreendimento?\n- Cidade?",
-          );
-          return;
-        }
-        const lines: string[] = ["Recebi a planilha. Encontrei 2 inconsistências:", ""];
-        for (const w of result.warnings) lines.push(`⚠️ ${w.message}`);
-        for (const e of result.errors) lines.push(`❌ ${e.message}`);
-        lines.push("");
-        lines.push("Continuo mesmo assim, ou você quer corrigir antes?");
-        onAssistantMessage(lines.join("\n"));
-      } catch (e) {
-        const message = e instanceof Error ? e.message : "Falha ao validar planilha";
-        dispatch({ type: "ERROR", message });
-        onAssistantMessage(`Não consegui validar a planilha: ${message}.`);
-      }
+      await processSpreadsheet(spreadsheetId, file.name);
     },
-    [state.step, onAssistantMessage, onUserMessage],
+    [state.step, processSpreadsheet, onAssistantMessage, onUserMessage],
   );
 
   const decideContinue = useCallback(async (): Promise<void> => {
