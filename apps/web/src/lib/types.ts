@@ -13,14 +13,17 @@ export type Message = {
   timestamp: string;
 };
 
-export type ThreadAgentResult = {
-  projectId: string;
-  projectNumber: number;
-  projectName: string;
-  driveFolderId: string | null;
-  ldpSheetsId: string | null;
-  definitionsCount: number;
-};
+/**
+ * Agent state persistido por thread. Mantém o tipo opaco aqui pra não criar
+ * dependência circular com `features/create-project`. O caller é responsável
+ * pelo formato — hoje é `CreateProjectState` (reducer state inteiro). Inclui
+ * step intermediário, números/URLs já confirmados, validation result e
+ * metadata parcial — tudo necessário pra reconstruir a UI ao reabrir.
+ *
+ * TODO sprint futura: TTL pra purgar flows abandonados (>30 dias) que ficam
+ * no localStorage indefinidamente.
+ */
+export type ThreadAgentState = unknown;
 
 
 export type Thread = {
@@ -28,7 +31,7 @@ export type Thread = {
   titulo: string;
   created_at: string;
   messages: Message[];
-  agent_result?: ThreadAgentResult | null;
+  agent_state?: ThreadAgentState | null;
 };
 
 export type QueryRequest = {

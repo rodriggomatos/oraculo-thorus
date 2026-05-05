@@ -44,29 +44,83 @@ describe("useCreateProjectFlow hydration", () => {
     expect(result.current.state.step).toBe("awaiting_number_confirmation");
   });
 
-  it("starts in success step when initialFinalResult is provided", () => {
-    const onAssistantMessage = vi.fn();
-    const onUserMessage = vi.fn();
+  it("initialState awaiting_metadata restores form-ready step + parsed metadata", () => {
     const { result } = renderHook(() =>
       useCreateProjectFlow({
-        onAssistantMessage,
-        onUserMessage,
-        initialFinalResult: {
-          projectId: "p-1",
-          projectNumber: 26033,
-          projectName: "26033 - X - Y - Z - SC",
-          driveFolderPending: false,
-          driveFolderId: "folder-x",
-          ldpSheetsId: null,
-          definitionsCount: 114,
+        onAssistantMessage: vi.fn(),
+        onUserMessage: vi.fn(),
+        initialState: {
+          step: "awaiting_metadata",
+          confirmedNumber: 26033,
+          spreadsheetId: "sheet-abc",
+          spreadsheetFileName: "orcamento.gsheet",
+          validationResult: { ok: true, errors: [], warnings: [] },
+        },
+      }),
+    );
+    expect(result.current.state.step).toBe("awaiting_metadata");
+    expect(result.current.state.confirmedNumber).toBe(26033);
+    expect(result.current.state.spreadsheetId).toBe("sheet-abc");
+    expect(result.current.isRunning).toBe(true);
+    expect(result.current.isActive).toBe(true);
+  });
+
+  it("initialState awaiting_number_confirmation restores number bar", () => {
+    const { result } = renderHook(() =>
+      useCreateProjectFlow({
+        onAssistantMessage: vi.fn(),
+        onUserMessage: vi.fn(),
+        initialState: {
+          step: "awaiting_number_confirmation",
+          suggestedNumber: 26050,
+        },
+      }),
+    );
+    expect(result.current.state.step).toBe("awaiting_number_confirmation");
+    expect(result.current.state.suggestedNumber).toBe(26050);
+  });
+
+  it("initialState awaiting_spreadsheet restores after number confirmed", () => {
+    const { result } = renderHook(() =>
+      useCreateProjectFlow({
+        onAssistantMessage: vi.fn(),
+        onUserMessage: vi.fn(),
+        initialState: {
+          step: "awaiting_spreadsheet",
+          confirmedNumber: 26050,
+        },
+      }),
+    );
+    expect(result.current.state.step).toBe("awaiting_spreadsheet");
+    expect(result.current.state.confirmedNumber).toBe(26050);
+  });
+
+  it("initialState success keeps finalResult ready for action buttons", () => {
+    const { result } = renderHook(() =>
+      useCreateProjectFlow({
+        onAssistantMessage: vi.fn(),
+        onUserMessage: vi.fn(),
+        initialState: {
+          step: "success",
+          confirmedNumber: 26033,
+          finalResult: {
+            projectId: "p-1",
+            projectNumber: 26033,
+            projectName: "26033 - X - Y - Z - SC",
+            driveFolderPending: false,
+            driveFolderId: "folder-x",
+            ldpSheetsId: null,
+            definitionsCount: 114,
+          },
         },
       }),
     );
     expect(result.current.state.step).toBe("success");
     expect(result.current.state.finalResult?.driveFolderId).toBe("folder-x");
+    expect(result.current.isRunning).toBe(false);
   });
 
-  it("hydrate(null) resets to idle; hydrate(result) jumps to success", () => {
+  it("hydrate(null) resets to idle; hydrate(state) restores arbitrary step", () => {
     const { result } = renderHook(() =>
       useCreateProjectFlow({
         onAssistantMessage: vi.fn(),
@@ -77,16 +131,13 @@ describe("useCreateProjectFlow hydration", () => {
 
     act(() => {
       result.current.hydrate({
-        projectId: "p-1",
-        projectNumber: 26034,
-        projectName: "n",
-        driveFolderPending: true,
-        driveFolderId: null,
-        ldpSheetsId: null,
-        definitionsCount: 0,
+        step: "awaiting_metadata",
+        confirmedNumber: 26034,
+        spreadsheetId: "sid",
       });
     });
-    expect(result.current.state.step).toBe("success");
+    expect(result.current.state.step).toBe("awaiting_metadata");
+    expect(result.current.state.spreadsheetId).toBe("sid");
 
     act(() => {
       result.current.hydrate(null);
@@ -94,52 +145,52 @@ describe("useCreateProjectFlow hydration", () => {
     expect(result.current.state.step).toBe("idle");
   });
 
-  it("CREATED dispatch invokes onFinalResult callback", async () => {
-    vi.mocked(mockApi.parseSpreadsheet).mockResolvedValueOnce({
-      ok: true,
-      errors: [],
-      warnings: [],
-    });
-    vi.mocked(mockApi.createProject).mockResolvedValueOnce({
-      projectId: "p-1",
-      projectNumber: 26035,
-      projectName: "n",
-      driveFolderPending: true,
-      driveFolderId: null,
-      ldpSheetsId: null,
-      definitionsCount: 7,
-    });
-    vi.mocked(mockApi.suggestNumber).mockResolvedValueOnce({ suggested: 26035 });
-
-    const onFinalResult = vi.fn();
+  it("patchFinalResult merges fields into existing finalResult only at success", () => {
     const { result } = renderHook(() =>
       useCreateProjectFlow({
         onAssistantMessage: vi.fn(),
         onUserMessage: vi.fn(),
-        onFinalResult,
+        initialState: {
+          step: "success",
+          finalResult: {
+            projectId: "p-1",
+            projectNumber: 1,
+            projectName: "n",
+            driveFolderPending: true,
+            driveFolderId: null,
+            ldpSheetsId: null,
+            definitionsCount: 0,
+          },
+        },
       }),
     );
 
-    await act(async () => {
-      await result.current.start();
-    });
     act(() => {
-      result.current.confirmNumber(26035);
+      result.current.patchFinalResult({ driveFolderId: "folder-x" });
     });
-    await act(async () => {
-      await result.current.submitFile(new File([""], "x.gsheet"));
-    });
-    await act(async () => {
-      await result.current.submitMetadata({
-        cliente: "Acme",
-        empreendimento: "T",
-        cidade: "Floripa",
-      });
-    });
+    expect(result.current.state.finalResult?.driveFolderId).toBe("folder-x");
+    expect(result.current.state.finalResult?.projectId).toBe("p-1");
 
-    expect(onFinalResult).toHaveBeenCalledWith(
-      expect.objectContaining({ projectNumber: 26035 }),
+    act(() => {
+      result.current.patchFinalResult({ ldpSheetsId: "sheet-y" });
+    });
+    expect(result.current.state.finalResult?.ldpSheetsId).toBe("sheet-y");
+    expect(result.current.state.finalResult?.driveFolderId).toBe("folder-x");
+  });
+
+  it("patchFinalResult is no-op when no finalResult yet", () => {
+    const { result } = renderHook(() =>
+      useCreateProjectFlow({
+        onAssistantMessage: vi.fn(),
+        onUserMessage: vi.fn(),
+        initialState: { step: "awaiting_metadata", confirmedNumber: 1 },
+      }),
     );
+    act(() => {
+      result.current.patchFinalResult({ driveFolderId: "x" });
+    });
+    expect(result.current.state.finalResult).toBeUndefined();
+    expect(result.current.state.step).toBe("awaiting_metadata");
   });
 });
 

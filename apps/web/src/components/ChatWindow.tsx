@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { FolderOpen, ListTodo, Search } from "lucide-react";
 import { InputArea } from "./chat/InputArea";
 import { CreateDriveFolderButton } from "./chat/CreateDriveFolderButton";
@@ -12,49 +12,27 @@ import { ThinkingIndicator } from "./ThinkingIndicator";
 import { MetadataForm } from "@/features/create-project/MetadataForm";
 import { useUserPermissions } from "@/features/create-project/hooks/useUserPermissions";
 import { useCreateProjectFlow } from "@/features/create-project/hooks/useCreateProjectFlow";
-import type { CreateProjectResponse } from "@/features/create-project/types";
-import type { Message, ThreadAgentResult } from "@/lib/types";
+import type { CreateProjectState } from "@/features/create-project/types";
+import type { Message, ThreadAgentState } from "@/lib/types";
 
 
 type Props = {
   threadId: string | null;
   messages: Message[];
-  agentResult: ThreadAgentResult | null;
+  agentState: ThreadAgentState | null;
   isLoading: boolean;
   onSend: (content: string) => Promise<void>;
   onAppendUser: (content: string) => void;
   onAppendAssistant: (content: string) => void;
-  onAgentResult: (result: ThreadAgentResult | null) => void;
+  onAgentState: (state: ThreadAgentState | null) => void;
 };
 
 
-function agentResultToFinalResult(
-  agent: ThreadAgentResult | null,
-): CreateProjectResponse | null {
-  if (!agent) return null;
-  return {
-    projectId: agent.projectId,
-    projectNumber: agent.projectNumber,
-    projectName: agent.projectName,
-    driveFolderPending: agent.driveFolderId === null,
-    driveFolderId: agent.driveFolderId,
-    ldpSheetsId: agent.ldpSheetsId,
-    definitionsCount: agent.definitionsCount,
-  };
-}
-
-
-function finalResultToAgentResult(
-  result: CreateProjectResponse,
-): ThreadAgentResult {
-  return {
-    projectId: result.projectId,
-    projectNumber: result.projectNumber,
-    projectName: result.projectName,
-    driveFolderId: result.driveFolderId,
-    ldpSheetsId: result.ldpSheetsId,
-    definitionsCount: result.definitionsCount,
-  };
+function asFlowState(agent: ThreadAgentState | null): CreateProjectState | null {
+  // Storage trata o agent state como opaco; aqui fazemos o cast pra ler como
+  // CreateProjectState. Não há validação de runtime — se algum dia o schema do
+  // reducer mudar de forma incompatível, há que purgar localStorage do user.
+  return (agent as CreateProjectState | null) ?? null;
 }
 
 
@@ -87,28 +65,20 @@ const SUGGESTIONS: Suggestion[] = [
 export function ChatWindow({
   threadId,
   messages,
-  agentResult,
+  agentState,
   isLoading,
   onSend,
   onAppendUser,
   onAppendAssistant,
-  onAgentResult,
+  onAgentState,
 }: Props): React.ReactElement {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { canCreateProject } = useUserPermissions();
 
-  const handleFinalResult = useCallback(
-    (result: CreateProjectResponse): void => {
-      onAgentResult(finalResultToAgentResult(result));
-    },
-    [onAgentResult],
-  );
-
   const flow = useCreateProjectFlow({
     onAssistantMessage: onAppendAssistant,
     onUserMessage: onAppendUser,
-    initialFinalResult: agentResultToFinalResult(agentResult),
-    onFinalResult: handleFinalResult,
+    initialState: asFlowState(agentState),
   });
 
   // Ref guarda o estado fresh do flow sem entrar em deps do useEffect — assim
@@ -118,24 +88,23 @@ export function ChatWindow({
 
   const flowHydrate = flow.hydrate;
   useEffect(() => {
-    // Thread mudou OU agentResult mudou. Dois cenários distintos:
+    // Thread mudou OU agentState mudou. Dois cenários distintos:
     //   1. Switch externo (sidebar): flow está idle/success/error → hidrata
     //      pra restaurar o estado da nova conversa.
     //   2. Append interno do flow (acabou de criar threadId pra persistir a
     //      primeira mensagem do agente): flow está em running step. Hidratar
     //      aqui resetaria o reducer pra idle e abortaria o flow no meio.
     if (flowIsRunningRef.current) return;
-    flowHydrate(agentResultToFinalResult(agentResult));
-  }, [threadId, agentResult, flowHydrate]);
+    flowHydrate(asFlowState(agentState));
+  }, [threadId, agentState, flowHydrate]);
 
-  const projectId = flow.state.finalResult?.projectId ?? null;
-  const initialDriveFolderId = flow.state.finalResult?.driveFolderId ?? null;
-  const [driveFolderId, setDriveFolderId] = useState<string | null>(
-    initialDriveFolderId,
-  );
+  // Persiste o reducer state inteiro toda vez que muda — restaura UI completa
+  // (step intermediário + dados parciais) quando reabrir thread.
   useEffect(() => {
-    setDriveFolderId(initialDriveFolderId);
-  }, [projectId, initialDriveFolderId]);
+    onAgentState(flow.state.step === "idle" ? null : flow.state);
+  }, [flow.state, onAgentState]);
+
+  const driveFolderId = flow.state.finalResult?.driveFolderId ?? null;
 
   useEffect(() => {
     if (!scrollRef.current) return;
@@ -271,15 +240,9 @@ export function ChatWindow({
                     <CreateDriveFolderButton
                       projectId={flow.state.finalResult.projectId}
                       initialFolderId={flow.state.finalResult.driveFolderId}
-                      onCreated={(id) => {
-                        setDriveFolderId(id);
-                        if (flow.state.finalResult) {
-                          onAgentResult({
-                            ...finalResultToAgentResult(flow.state.finalResult),
-                            driveFolderId: id,
-                          });
-                        }
-                      }}
+                      onCreated={(id) =>
+                        flow.patchFinalResult({ driveFolderId: id })
+                      }
                     />
                   </div>
                   <div className="px-1">
@@ -292,15 +255,9 @@ export function ChatWindow({
                           ? "Crie a pasta no Drive primeiro."
                           : undefined
                       }
-                      onCreated={(sheetsId) => {
-                        if (flow.state.finalResult) {
-                          onAgentResult({
-                            ...finalResultToAgentResult(flow.state.finalResult),
-                            driveFolderId,
-                            ldpSheetsId: sheetsId,
-                          });
-                        }
-                      }}
+                      onCreated={(sheetsId) =>
+                        flow.patchFinalResult({ ldpSheetsId: sheetsId })
+                      }
                     />
                   </div>
                 </div>

@@ -12,14 +12,14 @@ import {
   setCurrentThreadId,
   upsertThread,
 } from "@/lib/threads";
-import type { Message, Thread, ThreadAgentResult } from "@/lib/types";
+import type { Message, Thread, ThreadAgentState } from "@/lib/types";
 
 
 export type UseChatReturn = {
   threads: Thread[];
   threadId: string | null;
   messages: Message[];
-  agentResult: ThreadAgentResult | null;
+  agentState: ThreadAgentState | null;
   isLoading: boolean;
   sendMessage: (content: string) => Promise<void>;
   switchThread: (threadId: string) => void;
@@ -28,7 +28,7 @@ export type UseChatReturn = {
   renameThread: (threadId: string, newTitle: string) => void;
   appendUserMessage: (content: string) => void;
   appendAssistantMessage: (content: string) => void;
-  setAgentResult: (result: ThreadAgentResult | null) => void;
+  setAgentState: (state: ThreadAgentState | null) => void;
 };
 
 
@@ -45,14 +45,14 @@ export function useChat(): UseChatReturn {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [threadId, setThreadId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [agentResult, setAgentResultState] = useState<ThreadAgentResult | null>(null);
+  const [agentState, setAgentStateInternal] = useState<ThreadAgentState | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Refs pra leitura síncrona dos appends (evita stale closure ao chain
   // appendUserMessage → appendAssistantMessage rapidamente).
   const threadIdRef = useRef<string | null>(null);
   const messagesRef = useRef<Message[]>([]);
-  const agentResultRef = useRef<ThreadAgentResult | null>(null);
+  const agentStateRef = useRef<ThreadAgentState | null>(null);
 
   useEffect(() => {
     threadIdRef.current = threadId;
@@ -61,8 +61,8 @@ export function useChat(): UseChatReturn {
     messagesRef.current = messages;
   }, [messages]);
   useEffect(() => {
-    agentResultRef.current = agentResult;
-  }, [agentResult]);
+    agentStateRef.current = agentState;
+  }, [agentState]);
 
   useEffect(() => {
     setThreads(listThreads());
@@ -74,15 +74,15 @@ export function useChat(): UseChatReturn {
         threadIdRef.current = tid;
         setMessages(thread.messages);
         messagesRef.current = thread.messages;
-        const restored = thread.agent_result ?? null;
-        setAgentResultState(restored);
-        agentResultRef.current = restored;
+        const restored = thread.agent_state ?? null;
+        setAgentStateInternal(restored);
+        agentStateRef.current = restored;
       }
     }
   }, []);
 
   const persistAppend = useCallback(
-    (next: Message[], agentOverride?: ThreadAgentResult | null): string => {
+    (next: Message[], agentOverride?: ThreadAgentState | null): string => {
       let tid = threadIdRef.current;
       if (!tid) {
         tid = generateThreadId();
@@ -91,8 +91,8 @@ export function useChat(): UseChatReturn {
         setCurrentThreadId(tid);
       }
       const agentToSave =
-        agentOverride !== undefined ? agentOverride : agentResultRef.current;
-      upsertThread(tid, next, { agentResult: agentToSave });
+        agentOverride !== undefined ? agentOverride : agentStateRef.current;
+      upsertThread(tid, next, { agentState: agentToSave });
       setThreads(listThreads());
       return tid;
     },
@@ -131,7 +131,7 @@ export function useChat(): UseChatReturn {
           setCurrentThreadId(finalThreadId);
         }
         upsertThread(finalThreadId, merged, {
-          agentResult: agentResultRef.current,
+          agentState: agentStateRef.current,
           titleHint: content,
         });
         setThreads(listThreads());
@@ -157,9 +157,9 @@ export function useChat(): UseChatReturn {
     setCurrentThreadId(tid);
     messagesRef.current = thread.messages;
     setMessages(thread.messages);
-    const restored = thread.agent_result ?? null;
-    agentResultRef.current = restored;
-    setAgentResultState(restored);
+    const restored = thread.agent_state ?? null;
+    agentStateRef.current = restored;
+    setAgentStateInternal(restored);
   }, []);
 
   const newThread = useCallback((): void => {
@@ -168,8 +168,8 @@ export function useChat(): UseChatReturn {
     setCurrentThreadId(null);
     messagesRef.current = [];
     setMessages([]);
-    agentResultRef.current = null;
-    setAgentResultState(null);
+    agentStateRef.current = null;
+    setAgentStateInternal(null);
   }, []);
 
   const deleteThread = useCallback(
@@ -182,8 +182,8 @@ export function useChat(): UseChatReturn {
         setCurrentThreadId(null);
         messagesRef.current = [];
         setMessages([]);
-        agentResultRef.current = null;
-        setAgentResultState(null);
+        agentStateRef.current = null;
+        setAgentStateInternal(null);
       }
     },
     [threadId],
@@ -228,14 +228,14 @@ export function useChat(): UseChatReturn {
     [persistAppend],
   );
 
-  const setAgentResult = useCallback(
-    (result: ThreadAgentResult | null): void => {
-      agentResultRef.current = result;
-      setAgentResultState(result);
+  const setAgentState = useCallback(
+    (state: ThreadAgentState | null): void => {
+      agentStateRef.current = state;
+      setAgentStateInternal(state);
       // Persist se já existir thread; senão deixa pra próxima append (que cria).
       if (threadIdRef.current) {
         upsertThread(threadIdRef.current, messagesRef.current, {
-          agentResult: result,
+          agentState: state,
         });
         setThreads(listThreads());
       }
@@ -247,7 +247,7 @@ export function useChat(): UseChatReturn {
     threads,
     threadId,
     messages,
-    agentResult,
+    agentState,
     isLoading,
     sendMessage,
     switchThread,
@@ -256,6 +256,6 @@ export function useChat(): UseChatReturn {
     renameThread,
     appendUserMessage,
     appendAssistantMessage,
-    setAgentResult,
+    setAgentState,
   };
 }

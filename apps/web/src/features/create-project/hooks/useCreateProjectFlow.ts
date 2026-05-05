@@ -32,7 +32,8 @@ const RUNNING_STEPS: ReadonlySet<CreateProjectStep> = new Set([
 
 type FlowAction =
   | { type: "RESET" }
-  | { type: "HYDRATE"; finalResult: CreateProjectResponse | null }
+  | { type: "HYDRATE"; state: CreateProjectState | null }
+  | { type: "PATCH_FINAL_RESULT"; patch: Partial<CreateProjectResponse> }
   | { type: "START_REQUESTED" }
   | { type: "NUMBER_SUGGESTED"; suggested: number }
   | { type: "NUMBER_CONFIRMED"; confirmed: number }
@@ -53,14 +54,9 @@ const INITIAL_STATE: CreateProjectState = { step: "idle" };
 
 
 function initialStateFor(
-  finalResult: CreateProjectResponse | null | undefined,
+  state: CreateProjectState | null | undefined,
 ): CreateProjectState {
-  if (!finalResult) return INITIAL_STATE;
-  return {
-    step: "success",
-    finalResult,
-    confirmedNumber: finalResult.projectNumber,
-  };
+  return state ?? INITIAL_STATE;
 }
 
 
@@ -72,7 +68,13 @@ function reducer(
     case "RESET":
       return INITIAL_STATE;
     case "HYDRATE":
-      return initialStateFor(action.finalResult);
+      return initialStateFor(action.state);
+    case "PATCH_FINAL_RESULT":
+      if (!state.finalResult) return state;
+      return {
+        ...state,
+        finalResult: { ...state.finalResult, ...action.patch },
+      };
     case "START_REQUESTED":
       return { step: "awaiting_number_confirmation" };
     case "NUMBER_SUGGESTED":
@@ -121,15 +123,11 @@ export interface UseCreateProjectFlowOptions {
   onAssistantMessage: FlowMessageEmitter;
   onUserMessage: FlowMessageEmitter;
   /**
-   * Quando setado, o reducer arranca direto em `success` com esse result —
-   * usado pra hidratar o flow ao reabrir uma thread que já criou projeto.
+   * Quando setado, o reducer arranca já no estado fornecido — usado pra
+   * hidratar o flow ao reabrir uma thread no meio do caminho (qualquer step,
+   * não só success).
    */
-  initialFinalResult?: CreateProjectResponse | null;
-  /**
-   * Disparado sempre que `finalResult` é definido pela primeira vez (CREATED
-   * dispatch). O caller usa pra persistir o agentResult na thread.
-   */
-  onFinalResult?: (result: CreateProjectResponse) => void;
+  initialState?: CreateProjectState | null;
 }
 
 
@@ -151,17 +149,18 @@ export interface UseCreateProjectFlowReturn {
   decideContinue: () => Promise<void>;
   decideFix: () => void;
   reset: () => void;
-  hydrate: (finalResult: CreateProjectResponse | null) => void;
+  hydrate: (state: CreateProjectState | null) => void;
+  patchFinalResult: (patch: Partial<CreateProjectResponse>) => void;
 }
 
 
 export function useCreateProjectFlow(
   options: UseCreateProjectFlowOptions,
 ): UseCreateProjectFlowReturn {
-  const { onAssistantMessage, onUserMessage, initialFinalResult, onFinalResult } = options;
+  const { onAssistantMessage, onUserMessage, initialState } = options;
   const [state, dispatch] = useReducer(
     reducer,
-    initialFinalResult,
+    initialState,
     initialStateFor,
   );
 
@@ -228,7 +227,6 @@ export function useCreateProjectFlow(
           cityId,
         });
         dispatch({ type: "CREATED", result });
-        onFinalResult?.(result);
         const definitionsLine =
           result.definitionsCount > 0
             ? `\n📋 ${result.definitionsCount} perguntas adicionadas à Lista de Definições`
@@ -364,8 +362,15 @@ export function useCreateProjectFlow(
   }, []);
 
   const hydrate = useCallback(
-    (finalResult: CreateProjectResponse | null): void => {
-      dispatch({ type: "HYDRATE", finalResult });
+    (next: CreateProjectState | null): void => {
+      dispatch({ type: "HYDRATE", state: next });
+    },
+    [],
+  );
+
+  const patchFinalResult = useCallback(
+    (patch: Partial<CreateProjectResponse>): void => {
+      dispatch({ type: "PATCH_FINAL_RESULT", patch });
     },
     [],
   );
@@ -383,5 +388,6 @@ export function useCreateProjectFlow(
     decideFix,
     reset,
     hydrate,
+    patchFinalResult,
   };
 }

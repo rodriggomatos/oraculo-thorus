@@ -58,7 +58,7 @@ describe("useChat — agent flow persistence", () => {
     expect(result.current.threadId).toBeTruthy();
   });
 
-  it("setAgentResult persists agent_result on existing thread", () => {
+  it("setAgentState persists agent_state on existing thread", () => {
     const { result } = renderHook(() => useChat());
 
     act(() => {
@@ -66,49 +66,37 @@ describe("useChat — agent flow persistence", () => {
     });
 
     const tid = result.current.threadId!;
+    const state = { step: "awaiting_metadata", confirmedNumber: 26033 };
     act(() => {
-      result.current.setAgentResult({
-        projectId: "p-1",
-        projectNumber: 26033,
-        projectName: "26033 - X - Y - Z - SC",
-        driveFolderId: null,
-        ldpSheetsId: null,
-        definitionsCount: 114,
-      });
+      result.current.setAgentState(state);
     });
 
     const stored = listThreads().find((t) => t.thread_id === tid);
-    expect(stored?.agent_result?.projectNumber).toBe(26033);
-    expect(result.current.agentResult?.projectNumber).toBe(26033);
+    expect(stored?.agent_state).toEqual(state);
+    expect(result.current.agentState).toEqual(state);
   });
 
-  it("switchThread restores agent_result", () => {
+  it("switchThread restores agent_state", () => {
     const { result } = renderHook(() => useChat());
 
     act(() => {
       result.current.appendAssistantMessage("Iniciando…");
     });
     const tid = result.current.threadId!;
+    const state = { step: "awaiting_spreadsheet", confirmedNumber: 1 };
     act(() => {
-      result.current.setAgentResult({
-        projectId: "p-1",
-        projectNumber: 1,
-        projectName: "n",
-        driveFolderId: "folder-x",
-        ldpSheetsId: null,
-        definitionsCount: 0,
-      });
+      result.current.setAgentState(state);
     });
 
     act(() => {
       result.current.newThread();
     });
-    expect(result.current.agentResult).toBeNull();
+    expect(result.current.agentState).toBeNull();
 
     act(() => {
       result.current.switchThread(tid);
     });
-    expect(result.current.agentResult?.driveFolderId).toBe("folder-x");
+    expect(result.current.agentState).toEqual(state);
   });
 
   it("after newThread, append again creates a NEW thread", () => {

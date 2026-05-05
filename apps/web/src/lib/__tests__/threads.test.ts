@@ -6,7 +6,7 @@ import {
   listThreads,
   upsertThread,
 } from "../threads";
-import type { Message, ThreadAgentResult } from "../types";
+import type { Message } from "../types";
 
 
 function clearStorage(): void {
@@ -33,7 +33,7 @@ describe("threads storage", () => {
     const list = listThreads();
     expect(list).toHaveLength(1);
     expect(list[0].titulo).toBe("Quero criar projeto");
-    expect(list[0].agent_result).toBeNull();
+    expect(list[0].agent_state).toBeNull();
   });
 
   it("derives title from first message when no user message yet (agent flow)", () => {
@@ -50,46 +50,29 @@ describe("threads storage", () => {
     expect(t?.messages).toHaveLength(2);
   });
 
-  it("persists agent_result when provided", () => {
-    const result: ThreadAgentResult = {
-      projectId: "p-1",
-      projectNumber: 26033,
-      projectName: "26033 - X - Y - Z - SC",
-      driveFolderId: null,
-      ldpSheetsId: null,
-      definitionsCount: 114,
+  it("persists agent_state when provided", () => {
+    const state = {
+      step: "awaiting_metadata",
+      confirmedNumber: 26033,
+      spreadsheetId: "abc",
     };
-    upsertThread("t-1", [userMsg("create")], { agentResult: result });
-    expect(getThread("t-1")?.agent_result).toEqual(result);
+    upsertThread("t-1", [userMsg("create")], { agentState: state });
+    expect(getThread("t-1")?.agent_state).toEqual(state);
   });
 
-  it("preserves agent_result when only updating messages (undefined override)", () => {
-    const result: ThreadAgentResult = {
-      projectId: "p-1",
-      projectNumber: 1,
-      projectName: "n",
-      driveFolderId: "f",
-      ldpSheetsId: null,
-      definitionsCount: 1,
-    };
-    upsertThread("t-1", [userMsg("a")], { agentResult: result });
+  it("preserves agent_state when only updating messages (undefined override)", () => {
+    const state = { step: "awaiting_spreadsheet", confirmedNumber: 1 };
+    upsertThread("t-1", [userMsg("a")], { agentState: state });
     upsertThread("t-1", [userMsg("a"), assistantMsg("b")]);
-    expect(getThread("t-1")?.agent_result).toEqual(result);
+    expect(getThread("t-1")?.agent_state).toEqual(state);
   });
 
-  it("can clear agent_result by passing null", () => {
+  it("can clear agent_state by passing null", () => {
     upsertThread("t-1", [userMsg("a")], {
-      agentResult: {
-        projectId: "p",
-        projectNumber: 1,
-        projectName: "n",
-        driveFolderId: null,
-        ldpSheetsId: null,
-        definitionsCount: 0,
-      },
+      agentState: { step: "awaiting_metadata" },
     });
-    upsertThread("t-1", [userMsg("a")], { agentResult: null });
-    expect(getThread("t-1")?.agent_result).toBeNull();
+    upsertThread("t-1", [userMsg("a")], { agentState: null });
+    expect(getThread("t-1")?.agent_state).toBeNull();
   });
 
   it("listThreads returns most recent first", () => {

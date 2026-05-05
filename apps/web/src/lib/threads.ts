@@ -1,4 +1,4 @@
-import type { Message, Thread, ThreadAgentResult } from "./types";
+import type { Message, Thread, ThreadAgentState } from "./types";
 
 const THREADS_KEY = "threads";
 const CURRENT_THREAD_KEY = "current_thread_id";
@@ -13,11 +13,9 @@ function deriveTitulo(messages: Message[]): string {
   if (firstUser) {
     return firstUser.content.slice(0, 50) + (firstUser.content.length > 50 ? "..." : "");
   }
-  // Fluxo agêntico abre com mensagem do assistant. Usa esse conteúdo até o user
-  // mandar a primeira mensagem dele — aí o título já vai ter sido sobrescrito
-  // (não fazemos isso aqui pra evitar churn; quando dá pra trocar a primeira
-  // user message a thread é re-upserted com título novo via firstUserMessage
-  // se vier explicitamente).
+  // Flow agêntico abre com mensagem do assistant. Usa esse conteúdo até o user
+  // mandar a primeira mensagem dele — o título é trocado quando vier um titleHint
+  // mais específico (ver UpsertOptions.titleHint).
   const firstAny = messages[0];
   if (firstAny) {
     return firstAny.content.slice(0, 50) + (firstAny.content.length > 50 ? "..." : "");
@@ -47,7 +45,11 @@ export function getThread(threadId: string): Thread | null {
 
 
 export type UpsertOptions = {
-  agentResult?: ThreadAgentResult | null;
+  /**
+   * Estado opaco do agente em curso. `undefined` mantém o que estava;
+   * `null` apaga; objeto sobrescreve.
+   */
+  agentState?: ThreadAgentState | null;
   /**
    * Override do título — usado quando o caller já sabe a primeira user
    * message (ex.: sendMessage). Se omitido, título é derivado das messages.
@@ -66,8 +68,8 @@ export function upsertThread(
   const existing = all.find((t) => t.thread_id === threadId);
   if (existing) {
     existing.messages = messages;
-    if (options.agentResult !== undefined) {
-      existing.agent_result = options.agentResult;
+    if (options.agentState !== undefined) {
+      existing.agent_state = options.agentState;
     }
     // Título vira hint apenas se ainda for "Nova conversa" (placeholder).
     if (options.titleHint && existing.titulo === "Nova conversa") {
@@ -83,7 +85,7 @@ export function upsertThread(
       titulo,
       created_at: new Date().toISOString(),
       messages,
-      agent_result: options.agentResult ?? null,
+      agent_state: options.agentState ?? null,
     });
   }
   window.localStorage.setItem(THREADS_KEY, JSON.stringify(all));
