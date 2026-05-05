@@ -111,11 +111,21 @@ export function ChatWindow({
     onFinalResult: handleFinalResult,
   });
 
+  // Ref guarda o estado fresh do flow sem entrar em deps do useEffect — assim
+  // o efeito de hidratação não refira ao mudar de step.
+  const flowIsRunningRef = useRef(flow.isRunning);
+  flowIsRunningRef.current = flow.isRunning;
+
   const flowHydrate = flow.hydrate;
   useEffect(() => {
+    // Thread mudou OU agentResult mudou. Dois cenários distintos:
+    //   1. Switch externo (sidebar): flow está idle/success/error → hidrata
+    //      pra restaurar o estado da nova conversa.
+    //   2. Append interno do flow (acabou de criar threadId pra persistir a
+    //      primeira mensagem do agente): flow está em running step. Hidratar
+    //      aqui resetaria o reducer pra idle e abortaria o flow no meio.
+    if (flowIsRunningRef.current) return;
     flowHydrate(agentResultToFinalResult(agentResult));
-    // threadId muda em troca de conversa; agentResult muda quando o storage
-    // ressuscita a thread atual ou quando setAgentResult é chamado externamente.
   }, [threadId, agentResult, flowHydrate]);
 
   const projectId = flow.state.finalResult?.projectId ?? null;

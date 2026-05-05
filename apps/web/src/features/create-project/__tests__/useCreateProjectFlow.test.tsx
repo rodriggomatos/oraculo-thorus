@@ -28,6 +28,22 @@ describe("useCreateProjectFlow hydration", () => {
     vi.resetAllMocks();
   });
 
+  it("isRunning flips true during intermediate steps and false at terminal", async () => {
+    vi.mocked(mockApi.suggestNumber).mockResolvedValueOnce({ suggested: 26040 });
+    const { result } = renderHook(() =>
+      useCreateProjectFlow({
+        onAssistantMessage: vi.fn(),
+        onUserMessage: vi.fn(),
+      }),
+    );
+    expect(result.current.isRunning).toBe(false);
+    await act(async () => {
+      await result.current.start();
+    });
+    expect(result.current.isRunning).toBe(true);
+    expect(result.current.state.step).toBe("awaiting_number_confirmation");
+  });
+
   it("starts in success step when initialFinalResult is provided", () => {
     const onAssistantMessage = vi.fn();
     const onUserMessage = vi.fn();

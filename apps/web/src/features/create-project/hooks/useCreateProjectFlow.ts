@@ -136,6 +136,13 @@ export interface UseCreateProjectFlowOptions {
 export interface UseCreateProjectFlowReturn {
   state: CreateProjectState;
   isActive: boolean;
+  /**
+   * `true` enquanto o flow está numa etapa intermediária (start → metadata).
+   * Exposto pra distinguir "flow em conversa" de "flow ocioso ou terminal" —
+   * útil no caller pra decidir se uma re-hidratação por troca de thread é
+   * segura (durante etapas intermediárias clobbar o reducer aborta o flow).
+   */
+  isRunning: boolean;
   start: () => Promise<void>;
   submitUserText: (text: string) => Promise<void>;
   submitFile: (file: File) => Promise<void>;
@@ -366,6 +373,7 @@ export function useCreateProjectFlow(
   return {
     state,
     isActive: state.step !== "idle",
+    isRunning: RUNNING_STEPS.has(state.step),
     start,
     submitUserText,
     submitFile,
