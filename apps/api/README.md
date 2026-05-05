@@ -160,3 +160,29 @@ psql "$DATABASE_URL" -c "
 ```
 
 A resposta do Thor menciona o autor: "Registrado por Rodrigo Matos (rodrigo@thorus.com.br) em 2026-05-02."
+
+## Cities seed
+
+A tabela `city` (criada pela migration `20260504200000_create_city_table.sql`) começa vazia. O combobox de cidade do form "Criar projeto novo" lê dela. Pra popular com os ~5570 municípios IBGE:
+
+```bash
+cd apps/ai
+uv run python scripts/seed_cities.py
+```
+
+O script é idempotente (`ON CONFLICT (ibge_code) DO NOTHING`) — rodar de novo é seguro e só insere o que faltar. Demora ~10-30s dependendo da rede e da latência do Supabase.
+
+Validar:
+
+```sql
+SELECT COUNT(*) FROM city;
+-- ~5570 (varia conforme atualizações IBGE)
+
+SELECT estado, COUNT(*) FROM city GROUP BY estado ORDER BY estado;
+-- breakdown por UF
+```
+
+Quando rodar essa seed:
+
+- Após aplicar a migration `20260504200000_create_city_table.sql` em ambiente novo.
+- Periodicamente (semestral?), se quiser pegar municípios novos que IBGE adicionou. Não há municípios sendo removidos, então só faz INSERT — sem efeito colateral.

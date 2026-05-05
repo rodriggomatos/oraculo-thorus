@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getServerSupabase } from "@/lib/supabase/server";
 
 
 export type CityDTO = {
@@ -8,64 +9,57 @@ export type CityDTO = {
 };
 
 
-type IbgeMunicipio = {
-  id: number;
+type CityRow = {
+  ibge_code: string;
   nome: string;
-  microrregiao?: {
-    mesorregiao?: {
-      UF?: {
-        sigla?: string;
-      };
-    };
-  };
+  estado: string;
 };
 
 
-const IBGE_URL = "https://servicodados.ibge.gov.br/api/v1/localidades/municipios";
+export const revalidate = 86400;
 
 
 export async function GET(): Promise<NextResponse> {
-  let payload: IbgeMunicipio[];
+  let supabase;
   try {
-    const upstream = await fetch(IBGE_URL, {
-      next: { revalidate: 86400 },
-    });
-    if (!upstream.ok) {
-      return NextResponse.json(
-        { detail: `IBGE retornou ${upstream.status}` },
-        { status: 502 },
-      );
-    }
-    payload = (await upstream.json()) as IbgeMunicipio[];
+    supabase = await getServerSupabase();
   } catch (error) {
     return NextResponse.json(
       {
-        detail: `Falha ao consultar IBGE: ${
+        detail: `Supabase não configurado: ${
           error instanceof Error ? error.message : String(error)
         }`,
       },
+      { status: 500 },
+    );
+  }
+
+  const { data, error } = await supabase
+    .from("city")
+    .select("ibge_code, nome, estado")
+    .order("estado", { ascending: true })
+    .order("nome", { ascending: true });
+
+  if (error) {
+    return NextResponse.json(
+      { detail: `Falha ao ler cidades: ${error.message}` },
       { status: 502 },
     );
   }
 
-  const cities: CityDTO[] = [];
-  for (const m of payload) {
-    const sigla = m.microrregiao?.mesorregiao?.UF?.sigla;
-    if (!sigla) continue;
-    cities.push({
-      id: m.id,
-      nome: m.nome,
-      estado: sigla,
-    });
-  }
-
-  cities.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  const rows = (data ?? []) as CityRow[];
+  const cities: CityDTO[] = rows.map((r) => ({
+    id: Number.parseInt(r.ibge_code, 10),
+    nome: r.nome,
+    estado: r.estado,
+  }));
 
   return NextResponse.json(
     { cities },
     {
       headers: {
-        "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+        "Cache-Control":
+          "public, max-age=86400, stale-while-revalidate=604800",
       },
     },
   );
