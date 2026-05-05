@@ -58,8 +58,17 @@ export interface CreateProjectRequest {
 export interface CreateProjectResponse {
   projectId: string;
   projectNumber: number;
+  projectName: string;
   driveFolderPending: boolean;
+  driveFolderId: string | null;
   definitionsCount: number;
+}
+
+
+export interface CreateDriveFolderResponse {
+  folderId: string;
+  folderUrl: string;
+  folderName: string;
 }
 
 

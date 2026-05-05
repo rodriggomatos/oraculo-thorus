@@ -23,7 +23,6 @@ from oraculo_ai.ldp.seed import filter_master_for_active
 from oraculo_ai.projects.drive import list_project_numbers_from_drive
 from oraculo_ai.scope.types import DisciplinaRow, ParsedOrcamento
 
-
 _log = logging.getLogger(__name__)
 
 
@@ -123,6 +122,48 @@ async def _get_project_id_by_number(conn: Any, project_number: int) -> UUID | No
         )
         row = await cur.fetchone()
     return row["id"] if row else None
+
+
+async def get_project_drive_state(project_id: UUID) -> dict[str, Any] | None:
+    """Retorna {name, drive_folder_path, created_by} ou None se projeto não existe."""
+    pool = get_pool()
+    async with pool.connection() as conn:
+        async with conn.cursor(row_factory=dict_row) as cur:
+            await cur.execute(
+                """
+                SELECT name, drive_folder_path, created_by
+                FROM projects
+                WHERE id = %s
+                """,
+                (str(project_id),),
+            )
+            row = await cur.fetchone()
+    if row is None:
+        return None
+    return {
+        "name": str(row["name"]),
+        "drive_folder_path": (
+            str(row["drive_folder_path"]) if row["drive_folder_path"] else None
+        ),
+        "created_by": row["created_by"],
+    }
+
+
+async def update_drive_folder_path(project_id: UUID, folder_id: str) -> bool:
+    """Salva o folder_id em projects.drive_folder_path. Retorna False se id inexistente."""
+    pool = get_pool()
+    async with pool.connection() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute(
+                """
+                UPDATE projects
+                   SET drive_folder_path = %s,
+                       updated_at = NOW()
+                 WHERE id = %s
+                """,
+                (folder_id, str(project_id)),
+            )
+            return cur.rowcount > 0
 
 
 async def _scope_template_id_by_name(conn: Any, nome: str) -> UUID | None:

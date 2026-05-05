@@ -1,5 +1,6 @@
 """Endpoints de projetos: listagem + criação via 3-step flow (sem interrupt LangGraph)."""
 
+import logging
 from typing import Any
 from uuid import UUID
 
@@ -7,14 +8,28 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from oraculo_ai.agents.qa.repository import ProjectRepository
+from oraculo_ai.drive import (
+    DriveFolderAlreadyExistsError,
+    DriveTemplateNotAccessibleError,
+    copy_project_template,
+    folder_url_for,
+)
 from oraculo_ai.ldp import read_master_r04
 from oraculo_ai.permissions import check_permission
-from oraculo_ai.projects import create_project_with_scope, get_next_project_number
+from oraculo_ai.projects import (
+    create_project_with_scope,
+    get_next_project_number,
+    get_project_drive_state,
+    update_drive_folder_path,
+)
 from oraculo_ai.scope import parse_orcamento_from_sheets, validate_against_template
 from oraculo_ai.scope.types import ParsedOrcamento, ValidationResult
 
 from oraculo_api.auth import UserContext, get_current_user
 from oraculo_api.schemas.projects import ProjectDTO
+
+
+_log = logging.getLogger(__name__)
 
 
 router = APIRouter()
@@ -64,12 +79,20 @@ class CreateProjectRequest(BaseModel):
 class CreateProjectResponse(BaseModel):
     project_id: str
     project_number: int
+    project_name: str
     drive_folder_pending: bool = True
+    drive_folder_id: str | None = None
     scope_inserted: int = 0
     scope_skipped: list[str] = []
     already_existed: bool = False
     definitions_count: int = 0
     definitions_by_discipline: dict[str, int] = {}
+
+
+class CreateDriveFolderResponse(BaseModel):
+    folder_id: str
+    folder_url: str
+    folder_name: str
 
 
 @router.post("/projects/suggest-number", response_model=SuggestNumberResponse)
@@ -146,13 +169,104 @@ async def create_project_endpoint(
         master_rows=master_rows,
     )
 
+    drive_state = await get_project_drive_state(UUID(str(result["project_id"])))
+    drive_folder_id = drive_state["drive_folder_path"] if drive_state else None
+
     return CreateProjectResponse(
         project_id=str(result["project_id"]),
         project_number=int(result["project_number"]),
-        drive_folder_pending=True,
+        project_name=name,
+        drive_folder_pending=drive_folder_id is None,
+        drive_folder_id=drive_folder_id,
         scope_inserted=int(result.get("scope_inserted", 0)),
         scope_skipped=list(result.get("scope_skipped", [])),
         already_existed=not bool(result.get("created", True)),
         definitions_count=int(result.get("definitions_count", 0)),
         definitions_by_discipline=dict(result.get("definitions_by_discipline", {})),
+    )
+
+
+@router.post(
+    "/projects/{project_id}/create-drive-folder",
+    response_model=CreateDriveFolderResponse,
+)
+async def create_drive_folder_endpoint(
+    project_id: UUID,
+    user: UserContext = Depends(get_current_user),
+) -> CreateDriveFolderResponse:
+    if not check_permission(user, "create_project"):
+        raise HTTPException(
+            status_code=403,
+            detail="Sem permissão para criar pasta no Drive.",
+        )
+
+    state = await get_project_drive_state(project_id)
+    if state is None:
+        raise HTTPException(status_code=404, detail="Projeto não encontrado.")
+
+    is_admin = user.role == "admin"
+    if not is_admin and str(state["created_by"]) != str(user.user_id):
+        raise HTTPException(
+            status_code=403,
+            detail="Sem permissão para criar pasta no Drive deste projeto.",
+        )
+
+    if state["drive_folder_path"]:
+        raise HTTPException(
+            status_code=409,
+            detail="Pasta deste projeto já foi criada anteriormente.",
+        )
+
+    try:
+        result = await copy_project_template(state["name"])
+    except DriveFolderAlreadyExistsError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"Pasta '{exc.folder_name}' já existe no Drive. "
+                "Verifique se não foi criada manualmente. "
+                "Em caso de dúvida, contate Rodrigo."
+            ),
+        ) from exc
+    except DriveTemplateNotAccessibleError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "Pasta template do Drive não encontrada ou sem acesso. "
+                "Contate Rodrigo para liberar a service account."
+            ),
+        ) from exc
+    except PermissionError as exc:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Sem permissão para criar pasta no Drive. Service account precisa "
+                "ser Editor em 107_PROJETOS. Contate o admin."
+            ),
+        ) from exc
+    except Exception as exc:
+        _log.exception("Drive folder copy failed for project %s", project_id)
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "Erro de comunicação com Google Drive. Tente novamente em alguns segundos."
+            ),
+        ) from exc
+
+    updated = await update_drive_folder_path(project_id, result.folder_id)
+    if not updated:
+        _log.error(
+            "Drive folder %s created but project %s vanished before UPDATE",
+            result.folder_id,
+            project_id,
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="Pasta criada no Drive mas projeto sumiu antes de salvar — contate o admin.",
+        )
+
+    return CreateDriveFolderResponse(
+        folder_id=result.folder_id,
+        folder_url=result.folder_url,
+        folder_name=result.folder_name,
     )

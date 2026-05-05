@@ -1,5 +1,6 @@
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import type {
+  CreateDriveFolderResponse,
   CreateProjectRequest,
   CreateProjectResponse,
   SuggestNumberResponse,
@@ -75,4 +76,20 @@ export async function createProject(
     throw new Error(await extractErrorMessage(response, "Falha ao criar projeto"));
   }
   return (await response.json()) as CreateProjectResponse;
+}
+
+
+export async function createDriveFolder(
+  projectId: string,
+): Promise<CreateDriveFolderResponse> {
+  const response = await fetch(`${API_BASE}/${encodeURIComponent(projectId)}/create-drive-folder`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+  });
+  if (!response.ok) {
+    throw new Error(
+      await extractErrorMessage(response, "Falha ao criar pasta no Drive"),
+    );
+  }
+  return (await response.json()) as CreateDriveFolderResponse;
 }

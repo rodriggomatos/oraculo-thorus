@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { FolderOpen, ListTodo, Search } from "lucide-react";
 import { InputArea } from "./chat/InputArea";
+import { CreateDriveFolderButton } from "./chat/CreateDriveFolderButton";
 import { FlowDecisionBar } from "./chat/FlowDecisionBar";
 import { NumberConfirmBar } from "./chat/NumberConfirmBar";
 import { Message as MessageComponent } from "./Message";
@@ -108,6 +109,8 @@ export function ChatWindow({
   const showDecisionBar = flow.state.step === "awaiting_validation_decision";
   const showMetadataForm =
     flow.state.step === "awaiting_metadata" || flow.state.step === "creating";
+  const showDriveFolderButton =
+    flow.state.step === "success" && flow.state.finalResult !== undefined;
   const isParsingSheet = flow.state.step === "parsing_spreadsheet";
   const isCreating = flow.state.step === "creating";
 
@@ -192,6 +195,16 @@ export function ChatWindow({
                           ? flow.state.errorMessage ?? null
                           : null
                       }
+                    />
+                  </div>
+                </div>
+              ) : null}
+              {showDriveFolderButton && flow.state.finalResult ? (
+                <div className="flex justify-start">
+                  <div className="px-1">
+                    <CreateDriveFolderButton
+                      projectId={flow.state.finalResult.projectId}
+                      initialFolderId={flow.state.finalResult.driveFolderId}
                     />
                   </div>
                 </div>

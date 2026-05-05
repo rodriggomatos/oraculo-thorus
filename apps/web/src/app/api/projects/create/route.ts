@@ -40,14 +40,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const data = (await upstream.json()) as {
     project_id: string;
     project_number: number;
+    project_name?: string;
     drive_folder_pending: boolean;
+    drive_folder_id?: string | null;
     definitions_count?: number;
   };
 
   const remapped: CreateProjectResponse = {
     projectId: data.project_id,
     projectNumber: data.project_number,
+    projectName: data.project_name ?? "",
     driveFolderPending: data.drive_folder_pending,
+    driveFolderId: data.drive_folder_id ?? null,
     definitionsCount: data.definitions_count ?? 0,
   };
 

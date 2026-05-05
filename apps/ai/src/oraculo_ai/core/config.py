@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     supabase_jwks_url: str = ""
 
     thorus_drive_root_id: str = "0AGS3i6FJiluJUk9PVA"
+    thorus_drive_template_folder_id: str = "1IU6InjaYd74yNtF3kREke-Ywdq4sXoXb"
 
     ldp_master_sheet_id: str = "1zVwOQQVe6MAZoi4HV8sL1muKlNHZDf_G9F06E7h9aOE"
     ldp_master_tab: str = "Lista de definições"

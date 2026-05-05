@@ -13,6 +13,7 @@ from oraculo_ai.ingestion.google_sheets.connector import load_credentials
 
 
 _DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
+_DRIVE_RW_SCOPES = ["https://www.googleapis.com/auth/drive"]
 
 _FOLDER_MIME = "application/vnd.google-apps.folder"
 _SPREADSHEET_MIME = "application/vnd.google-apps.spreadsheet"
@@ -68,6 +69,21 @@ def build_drive_service() -> Resource:
         raise RuntimeError("GOOGLE_SERVICE_ACCOUNT_JSON not configured")
 
     creds = load_credentials(settings.google_service_account_json, _DRIVE_SCOPES)
+    return build("drive", "v3", credentials=creds, cache_discovery=False)
+
+
+def build_drive_service_rw() -> Resource:
+    """Variante com escopo de escrita — usada pelo folder_creator pra copiar templates.
+
+    Service account precisa estar como Editor nas pastas alvo (107_PROJETOS) e na
+    pasta template oficial. Mantemos esse builder separado do readonly pra deixar
+    explícito quais callers fazem write no Drive.
+    """
+    settings = get_settings()
+    if not settings.google_service_account_json:
+        raise RuntimeError("GOOGLE_SERVICE_ACCOUNT_JSON not configured")
+
+    creds = load_credentials(settings.google_service_account_json, _DRIVE_RW_SCOPES)
     return build("drive", "v3", credentials=creds, cache_discovery=False)
 
 
