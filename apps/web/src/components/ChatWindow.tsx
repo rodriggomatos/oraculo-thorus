@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FolderOpen, ListTodo, Search } from "lucide-react";
 import { InputArea } from "./chat/InputArea";
 import { CreateDriveFolderButton } from "./chat/CreateDriveFolderButton";
@@ -12,17 +12,50 @@ import { ThinkingIndicator } from "./ThinkingIndicator";
 import { MetadataForm } from "@/features/create-project/MetadataForm";
 import { useUserPermissions } from "@/features/create-project/hooks/useUserPermissions";
 import { useCreateProjectFlow } from "@/features/create-project/hooks/useCreateProjectFlow";
-import type { Message } from "@/lib/types";
+import type { CreateProjectResponse } from "@/features/create-project/types";
+import type { Message, ThreadAgentResult } from "@/lib/types";
 
 
 type Props = {
   threadId: string | null;
   messages: Message[];
+  agentResult: ThreadAgentResult | null;
   isLoading: boolean;
   onSend: (content: string) => Promise<void>;
   onAppendUser: (content: string) => void;
   onAppendAssistant: (content: string) => void;
+  onAgentResult: (result: ThreadAgentResult | null) => void;
 };
+
+
+function agentResultToFinalResult(
+  agent: ThreadAgentResult | null,
+): CreateProjectResponse | null {
+  if (!agent) return null;
+  return {
+    projectId: agent.projectId,
+    projectNumber: agent.projectNumber,
+    projectName: agent.projectName,
+    driveFolderPending: agent.driveFolderId === null,
+    driveFolderId: agent.driveFolderId,
+    ldpSheetsId: agent.ldpSheetsId,
+    definitionsCount: agent.definitionsCount,
+  };
+}
+
+
+function finalResultToAgentResult(
+  result: CreateProjectResponse,
+): ThreadAgentResult {
+  return {
+    projectId: result.projectId,
+    projectNumber: result.projectNumber,
+    projectName: result.projectName,
+    driveFolderId: result.driveFolderId,
+    ldpSheetsId: result.ldpSheetsId,
+    definitionsCount: result.definitionsCount,
+  };
+}
 
 
 type Suggestion = {
@@ -54,23 +87,36 @@ const SUGGESTIONS: Suggestion[] = [
 export function ChatWindow({
   threadId,
   messages,
+  agentResult,
   isLoading,
   onSend,
   onAppendUser,
   onAppendAssistant,
+  onAgentResult,
 }: Props): React.ReactElement {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { canCreateProject } = useUserPermissions();
 
+  const handleFinalResult = useCallback(
+    (result: CreateProjectResponse): void => {
+      onAgentResult(finalResultToAgentResult(result));
+    },
+    [onAgentResult],
+  );
+
   const flow = useCreateProjectFlow({
     onAssistantMessage: onAppendAssistant,
     onUserMessage: onAppendUser,
+    initialFinalResult: agentResultToFinalResult(agentResult),
+    onFinalResult: handleFinalResult,
   });
 
-  const flowReset = flow.reset;
+  const flowHydrate = flow.hydrate;
   useEffect(() => {
-    flowReset();
-  }, [threadId, flowReset]);
+    flowHydrate(agentResultToFinalResult(agentResult));
+    // threadId muda em troca de conversa; agentResult muda quando o storage
+    // ressuscita a thread atual ou quando setAgentResult é chamado externamente.
+  }, [threadId, agentResult, flowHydrate]);
 
   const projectId = flow.state.finalResult?.projectId ?? null;
   const initialDriveFolderId = flow.state.finalResult?.driveFolderId ?? null;
@@ -215,7 +261,15 @@ export function ChatWindow({
                     <CreateDriveFolderButton
                       projectId={flow.state.finalResult.projectId}
                       initialFolderId={flow.state.finalResult.driveFolderId}
-                      onCreated={(id) => setDriveFolderId(id)}
+                      onCreated={(id) => {
+                        setDriveFolderId(id);
+                        if (flow.state.finalResult) {
+                          onAgentResult({
+                            ...finalResultToAgentResult(flow.state.finalResult),
+                            driveFolderId: id,
+                          });
+                        }
+                      }}
                     />
                   </div>
                   <div className="px-1">
@@ -228,6 +282,15 @@ export function ChatWindow({
                           ? "Crie a pasta no Drive primeiro."
                           : undefined
                       }
+                      onCreated={(sheetsId) => {
+                        if (flow.state.finalResult) {
+                          onAgentResult({
+                            ...finalResultToAgentResult(flow.state.finalResult),
+                            driveFolderId,
+                            ldpSheetsId: sheetsId,
+                          });
+                        }
+                      }}
                     />
                   </div>
                 </div>

@@ -13,11 +13,22 @@ export type Message = {
   timestamp: string;
 };
 
+export type ThreadAgentResult = {
+  projectId: string;
+  projectNumber: number;
+  projectName: string;
+  driveFolderId: string | null;
+  ldpSheetsId: string | null;
+  definitionsCount: number;
+};
+
+
 export type Thread = {
   thread_id: string;
   titulo: string;
   created_at: string;
   messages: Message[];
+  agent_result?: ThreadAgentResult | null;
 };
 
 export type QueryRequest = {

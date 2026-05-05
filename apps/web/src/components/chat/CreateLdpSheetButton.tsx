@@ -11,6 +11,7 @@ export type CreateLdpSheetButtonProps = {
   initialSheetsId?: string | null;
   disabled?: boolean;
   disabledReason?: string;
+  onCreated?: (sheetsId: string) => void;
 };
 
 
@@ -27,6 +28,7 @@ export function CreateLdpSheetButton({
   initialSheetsId = null,
   disabled = false,
   disabledReason,
+  onCreated,
 }: CreateLdpSheetButtonProps): React.ReactElement {
   const [status, setStatus] = useState<Status>(initialSheetsId ? "success" : "idle");
   const [sheetsUrl, setSheetsUrl] = useState<string | null>(
@@ -42,6 +44,7 @@ export function CreateLdpSheetButton({
       const result = await createLdpSheet(projectId);
       setSheetsUrl(result.sheetsUrl);
       setStatus("success");
+      onCreated?.(result.sheetsId);
     } catch (e) {
       setErrorMessage(e instanceof Error ? e.message : "Falha desconhecida");
       setStatus("error");

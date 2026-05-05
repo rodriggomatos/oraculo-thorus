@@ -23,6 +23,111 @@ function renderFlow() {
 }
 
 
+describe("useCreateProjectFlow hydration", () => {
+  afterEach(() => {
+    vi.resetAllMocks();
+  });
+
+  it("starts in success step when initialFinalResult is provided", () => {
+    const onAssistantMessage = vi.fn();
+    const onUserMessage = vi.fn();
+    const { result } = renderHook(() =>
+      useCreateProjectFlow({
+        onAssistantMessage,
+        onUserMessage,
+        initialFinalResult: {
+          projectId: "p-1",
+          projectNumber: 26033,
+          projectName: "26033 - X - Y - Z - SC",
+          driveFolderPending: false,
+          driveFolderId: "folder-x",
+          ldpSheetsId: null,
+          definitionsCount: 114,
+        },
+      }),
+    );
+    expect(result.current.state.step).toBe("success");
+    expect(result.current.state.finalResult?.driveFolderId).toBe("folder-x");
+  });
+
+  it("hydrate(null) resets to idle; hydrate(result) jumps to success", () => {
+    const { result } = renderHook(() =>
+      useCreateProjectFlow({
+        onAssistantMessage: vi.fn(),
+        onUserMessage: vi.fn(),
+      }),
+    );
+    expect(result.current.state.step).toBe("idle");
+
+    act(() => {
+      result.current.hydrate({
+        projectId: "p-1",
+        projectNumber: 26034,
+        projectName: "n",
+        driveFolderPending: true,
+        driveFolderId: null,
+        ldpSheetsId: null,
+        definitionsCount: 0,
+      });
+    });
+    expect(result.current.state.step).toBe("success");
+
+    act(() => {
+      result.current.hydrate(null);
+    });
+    expect(result.current.state.step).toBe("idle");
+  });
+
+  it("CREATED dispatch invokes onFinalResult callback", async () => {
+    vi.mocked(mockApi.parseSpreadsheet).mockResolvedValueOnce({
+      ok: true,
+      errors: [],
+      warnings: [],
+    });
+    vi.mocked(mockApi.createProject).mockResolvedValueOnce({
+      projectId: "p-1",
+      projectNumber: 26035,
+      projectName: "n",
+      driveFolderPending: true,
+      driveFolderId: null,
+      ldpSheetsId: null,
+      definitionsCount: 7,
+    });
+    vi.mocked(mockApi.suggestNumber).mockResolvedValueOnce({ suggested: 26035 });
+
+    const onFinalResult = vi.fn();
+    const { result } = renderHook(() =>
+      useCreateProjectFlow({
+        onAssistantMessage: vi.fn(),
+        onUserMessage: vi.fn(),
+        onFinalResult,
+      }),
+    );
+
+    await act(async () => {
+      await result.current.start();
+    });
+    act(() => {
+      result.current.confirmNumber(26035);
+    });
+    await act(async () => {
+      await result.current.submitFile(new File([""], "x.gsheet"));
+    });
+    await act(async () => {
+      await result.current.submitMetadata({
+        cliente: "Acme",
+        empreendimento: "T",
+        cidade: "Floripa",
+      });
+    });
+
+    expect(onFinalResult).toHaveBeenCalledWith(
+      expect.objectContaining({ projectNumber: 26035 }),
+    );
+  });
+});
+
+
 describe("useCreateProjectFlow.start", () => {
   beforeEach(() => {
     vi.mocked(mockApi.suggestNumber).mockResolvedValue({ suggested: 26024 });

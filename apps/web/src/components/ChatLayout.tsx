@@ -27,10 +27,12 @@ export function ChatLayout(): React.ReactElement {
       <ChatWindow
         threadId={chat.threadId}
         messages={chat.messages}
+        agentResult={chat.agentResult}
         isLoading={chat.isLoading}
         onSend={chat.sendMessage}
         onAppendUser={chat.appendUserMessage}
         onAppendAssistant={chat.appendAssistantMessage}
+        onAgentResult={chat.setAgentResult}
       />
     </div>
   );

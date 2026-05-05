@@ -32,6 +32,7 @@ const RUNNING_STEPS: ReadonlySet<CreateProjectStep> = new Set([
 
 type FlowAction =
   | { type: "RESET" }
+  | { type: "HYDRATE"; finalResult: CreateProjectResponse | null }
   | { type: "START_REQUESTED" }
   | { type: "NUMBER_SUGGESTED"; suggested: number }
   | { type: "NUMBER_CONFIRMED"; confirmed: number }
@@ -51,6 +52,18 @@ type FlowAction =
 const INITIAL_STATE: CreateProjectState = { step: "idle" };
 
 
+function initialStateFor(
+  finalResult: CreateProjectResponse | null | undefined,
+): CreateProjectState {
+  if (!finalResult) return INITIAL_STATE;
+  return {
+    step: "success",
+    finalResult,
+    confirmedNumber: finalResult.projectNumber,
+  };
+}
+
+
 function reducer(
   state: CreateProjectState,
   action: FlowAction,
@@ -58,6 +71,8 @@ function reducer(
   switch (action.type) {
     case "RESET":
       return INITIAL_STATE;
+    case "HYDRATE":
+      return initialStateFor(action.finalResult);
     case "START_REQUESTED":
       return { step: "awaiting_number_confirmation" };
     case "NUMBER_SUGGESTED":
@@ -105,6 +120,16 @@ export type FlowMessageEmitter = (content: string) => void;
 export interface UseCreateProjectFlowOptions {
   onAssistantMessage: FlowMessageEmitter;
   onUserMessage: FlowMessageEmitter;
+  /**
+   * Quando setado, o reducer arranca direto em `success` com esse result —
+   * usado pra hidratar o flow ao reabrir uma thread que já criou projeto.
+   */
+  initialFinalResult?: CreateProjectResponse | null;
+  /**
+   * Disparado sempre que `finalResult` é definido pela primeira vez (CREATED
+   * dispatch). O caller usa pra persistir o agentResult na thread.
+   */
+  onFinalResult?: (result: CreateProjectResponse) => void;
 }
 
 
@@ -119,14 +144,19 @@ export interface UseCreateProjectFlowReturn {
   decideContinue: () => Promise<void>;
   decideFix: () => void;
   reset: () => void;
+  hydrate: (finalResult: CreateProjectResponse | null) => void;
 }
 
 
 export function useCreateProjectFlow(
   options: UseCreateProjectFlowOptions,
 ): UseCreateProjectFlowReturn {
-  const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
-  const { onAssistantMessage, onUserMessage } = options;
+  const { onAssistantMessage, onUserMessage, initialFinalResult, onFinalResult } = options;
+  const [state, dispatch] = useReducer(
+    reducer,
+    initialFinalResult,
+    initialStateFor,
+  );
 
   const start = useCallback(async (): Promise<void> => {
     if (RUNNING_STEPS.has(state.step)) return;
@@ -191,6 +221,7 @@ export function useCreateProjectFlow(
           cityId,
         });
         dispatch({ type: "CREATED", result });
+        onFinalResult?.(result);
         const definitionsLine =
           result.definitionsCount > 0
             ? `\n📋 ${result.definitionsCount} perguntas adicionadas à Lista de Definições`
@@ -325,6 +356,13 @@ export function useCreateProjectFlow(
     dispatch({ type: "RESET" });
   }, []);
 
+  const hydrate = useCallback(
+    (finalResult: CreateProjectResponse | null): void => {
+      dispatch({ type: "HYDRATE", finalResult });
+    },
+    [],
+  );
+
   return {
     state,
     isActive: state.step !== "idle",
@@ -336,5 +374,6 @@ export function useCreateProjectFlow(
     decideContinue,
     decideFix,
     reset,
+    hydrate,
   };
 }
