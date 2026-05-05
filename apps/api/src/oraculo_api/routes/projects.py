@@ -51,6 +51,7 @@ class ProjectMetadataPayload(BaseModel):
     empreendimento: str
     cidade: str
     estado: str | None = None
+    city_id: int | None = None
 
 
 class CreateProjectRequest(BaseModel):
@@ -122,6 +123,10 @@ async def create_project_endpoint(
     form_estado = (body.metadata.estado or "").strip() or None
     estado = form_estado if form_estado is not None else parsed.estado
 
+    city_ibge_code = (
+        str(body.metadata.city_id) if body.metadata.city_id is not None else None
+    )
+
     result: dict[str, Any] = await create_project_with_scope(
         project_number=body.confirmed_number,
         name=name,
@@ -137,6 +142,7 @@ async def create_project_endpoint(
         orcamento_sheets_id=body.spreadsheet_id,
         disciplinas=parsed.disciplinas,
         created_by=user.user_id,
+        city_ibge_code=city_ibge_code,
     )
 
     return CreateProjectResponse(
