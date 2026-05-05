@@ -190,20 +190,13 @@ export function useCreateProjectFlow(
           cityId,
         });
         dispatch({ type: "CREATED", result });
-        const valor = result.totalContratado.toLocaleString("pt-BR", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        });
-        const margemPercent = (result.margem * 100).toFixed(2);
         onAssistantMessage(
           `✅ Projeto **${result.projectNumber}** criado.\n\n` +
             `- Cliente: ${metadata.cliente || "—"}\n` +
             `- Empreendimento: ${metadata.empreendimento || "—"}\n` +
             `- Cidade: ${metadata.cidade || "—"}\n` +
             (metadata.estado ? `- Estado: ${metadata.estado}\n` : "") +
-            `- Total contratado: R$ ${valor}\n` +
-            `- Margem: ${margemPercent}%\n\n` +
-            `⚠️ A pasta no Drive ainda precisa ser criada manualmente. No próximo sprint isso será automático.`,
+            `\n⚠️ A pasta no Drive ainda precisa ser criada manualmente. No próximo sprint isso será automático.`,
         );
       } catch (e) {
         const message = e instanceof Error ? e.message : "Falha ao criar projeto";
