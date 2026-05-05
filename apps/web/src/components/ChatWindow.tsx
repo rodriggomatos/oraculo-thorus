@@ -7,6 +7,7 @@ import { CreateDriveFolderButton } from "./chat/CreateDriveFolderButton";
 import { CreateLdpSheetButton } from "./chat/CreateLdpSheetButton";
 import { FlowDecisionBar } from "./chat/FlowDecisionBar";
 import { NumberConfirmBar } from "./chat/NumberConfirmBar";
+import { shouldHydrateFlow } from "./chat/flow-hydration";
 import { Message as MessageComponent } from "./Message";
 import { ThinkingIndicator } from "./ThinkingIndicator";
 import { MetadataForm } from "@/features/create-project/MetadataForm";
@@ -81,20 +82,27 @@ export function ChatWindow({
     initialState: asFlowState(agentState),
   });
 
-  // Ref guarda o estado fresh do flow sem entrar em deps do useEffect — assim
-  // o efeito de hidratação não refira ao mudar de step.
+  // Refs guardam estado fresh do flow + threadId anterior sem entrar em deps.
+  // Permitem que o efeito decida hidratar olhando o "antes" vs "agora" de
+  // threadId — distinguindo append interno (manter flow) de switch externo
+  // (clobbar pra state da nova thread, mesmo que seja null/idle).
   const flowIsRunningRef = useRef(flow.isRunning);
   flowIsRunningRef.current = flow.isRunning;
+  const prevThreadIdRef = useRef<string | null>(null);
 
   const flowHydrate = flow.hydrate;
   useEffect(() => {
-    // Thread mudou OU agentState mudou. Dois cenários distintos:
-    //   1. Switch externo (sidebar): flow está idle/success/error → hidrata
-    //      pra restaurar o estado da nova conversa.
-    //   2. Append interno do flow (acabou de criar threadId pra persistir a
-    //      primeira mensagem do agente): flow está em running step. Hidratar
-    //      aqui resetaria o reducer pra idle e abortaria o flow no meio.
-    if (flowIsRunningRef.current) return;
+    const prev = prevThreadIdRef.current;
+    prevThreadIdRef.current = threadId;
+    if (
+      !shouldHydrateFlow({
+        prevThreadId: prev,
+        currentThreadId: threadId,
+        isRunning: flowIsRunningRef.current,
+      })
+    ) {
+      return;
+    }
     flowHydrate(asFlowState(agentState));
   }, [threadId, agentState, flowHydrate]);
 
