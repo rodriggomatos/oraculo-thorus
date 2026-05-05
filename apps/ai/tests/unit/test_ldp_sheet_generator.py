@@ -204,15 +204,49 @@ def test_projeto_tab_updates_skips_blank_values():
     assert updates == []
 
 
-def test_drive_copy_master_to_definicoes_handles_403_on_master(monkeypatch):
-    """Erro 403 na cópia da master deve virar MasterNotAccessibleError."""
-    from googleapiclient.errors import HttpError
+def test_drive_copy_master_to_definicoes_passes_parents_in_copy_body():
+    """Cópia precisa nascer dentro do target — sem `parents` no body, Drive
+    cria a cópia no parent da master (que a SA não tem write)."""
+    captured: dict[str, Any] = {}
 
-    class _FailingDrive:
+    class _Drive:
         def files(self):
             return self
 
-        def copy(self, **kwargs):  # noqa: ARG002
+        def get(self, **kwargs):  # noqa: ARG002
+            class _Exec:
+                def execute(_self):  # noqa: N805
+                    return {"id": "MASTER", "name": "master"}
+            return _Exec()
+
+        def copy(self, **kwargs):
+            captured.update(kwargs)
+
+            class _Exec:
+                def execute(_self):  # noqa: N805
+                    return {"id": "NEW", "parents": [kwargs["body"]["parents"][0]]}
+            return _Exec()
+
+    sheet_generator._drive_copy_master_to_definicoes(
+        _Drive(),
+        master_id="MASTER",
+        target_folder_id="DEST",
+        new_name="LDP",
+    )
+    assert captured["body"]["parents"] == ["DEST"]
+    assert captured["body"]["name"] == "LDP"
+    assert captured["fileId"] == "MASTER"
+
+
+def test_drive_copy_403_on_master_get_maps_to_master_inaccessible():
+    """Probe `files.get` na master diferencia 403 da master vs do destino."""
+    from googleapiclient.errors import HttpError
+
+    class _FailingGet:
+        def files(self):
+            return self
+
+        def get(self, **kwargs):  # noqa: ARG002
             class _Exec:
                 def execute(_self):  # noqa: N805
                     resp = MagicMock()
@@ -222,7 +256,38 @@ def test_drive_copy_master_to_definicoes_handles_403_on_master(monkeypatch):
 
     with pytest.raises(sheet_generator.MasterNotAccessibleError):
         sheet_generator._drive_copy_master_to_definicoes(
-            _FailingDrive(),
+            _FailingGet(),
+            master_id="MASTER",
+            target_folder_id="DEST",
+            new_name="LDP",
+        )
+
+
+def test_drive_copy_403_on_copy_after_master_ok_maps_to_target_not_editable():
+    """Master probed OK → 403 no copy aponta pra pasta destino (DEFINIÇÕES)."""
+    from googleapiclient.errors import HttpError
+
+    class _Drive:
+        def files(self):
+            return self
+
+        def get(self, **kwargs):  # noqa: ARG002
+            class _Exec:
+                def execute(_self):  # noqa: N805
+                    return {"id": "MASTER"}
+            return _Exec()
+
+        def copy(self, **kwargs):  # noqa: ARG002
+            class _Exec:
+                def execute(_self):  # noqa: N805
+                    resp = MagicMock()
+                    resp.status = 403
+                    raise HttpError(resp, b"forbidden")
+            return _Exec()
+
+    with pytest.raises(sheet_generator.DefinicoesParentNotEditableError):
+        sheet_generator._drive_copy_master_to_definicoes(
+            _Drive(),
             master_id="MASTER",
             target_folder_id="DEST",
             new_name="LDP",

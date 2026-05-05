@@ -255,18 +255,22 @@ def _drive_copy_master_to_definicoes(
     target_folder_id: str,
     new_name: str,
 ) -> str:
-    """Copia master, depois move pra target_folder_id via add/removeParents."""
+    """Copia a master direto pra `target_folder_id` (sem move pós-cópia).
+
+    Passar `parents` no body de `files.copy` faz a cópia nascer dentro da
+    pasta destino — a SA precisa apenas de READ na master e WRITE em
+    `target_folder_id`. SEM `parents`, Drive cria a cópia nos parents da
+    master, exigindo WRITE na pasta da master também (que a SA não tem).
+
+    Probe `files.get(master_id)` antes do copy distingue 403 da master
+    (mensagem "master inacessível") do 403 do destino ("DEFINIÇÕES não
+    editável") — essencial pra mensagem PT-BR ser acionável.
+    """
+    _log.info("Probing master access master_id=%s", master_id)
     try:
-        copied = (
-            drive.files()
-            .copy(
-                fileId=master_id,
-                body={"name": new_name},
-                fields="id, parents",
-                supportsAllDrives=True,
-            )
-            .execute()
-        )
+        drive.files().get(
+            fileId=master_id, fields="id,name", supportsAllDrives=True
+        ).execute()
     except HttpError as exc:
         status = getattr(getattr(exc, "resp", None), "status", None)
         if status in (403, 404):
@@ -275,24 +279,35 @@ def _drive_copy_master_to_definicoes(
             ) from exc
         raise
 
-    new_id = str(copied["id"])
-    old_parents = ",".join(str(p) for p in copied.get("parents", []) if p)
+    _log.info(
+        "Copying master %s into target_folder_id=%s as %r",
+        master_id,
+        target_folder_id,
+        new_name,
+    )
     try:
-        drive.files().update(
-            fileId=new_id,
-            addParents=target_folder_id,
-            removeParents=old_parents or None,
-            fields="id, parents",
-            supportsAllDrives=True,
-        ).execute()
+        copied = (
+            drive.files()
+            .copy(
+                fileId=master_id,
+                body={"name": new_name, "parents": [target_folder_id]},
+                fields="id,parents",
+                supportsAllDrives=True,
+            )
+            .execute()
+        )
     except HttpError as exc:
         status = getattr(getattr(exc, "resp", None), "status", None)
         if status in (403,):
+            # Master já foi probed acima — 403 aqui aponta pro destino.
             raise DefinicoesParentNotEditableError(
                 "Sem permissão para criar planilha na pasta DEFINIÇÕES. Service "
                 "account precisa ser Editor. Contate Rodrigo."
             ) from exc
         raise
+
+    new_id = str(copied["id"])
+    _log.info("Master copied; new sheets_id=%s parents=%s", new_id, copied.get("parents"))
     return new_id
 
 
@@ -345,10 +360,18 @@ def _generate_ldp_sheet_blocking(
     project_folder_id = str(state["drive_folder_path"])
     new_name = f"Lista de definição - {project_number}"
 
+    _log.info(
+        "LDP sheet pipeline begin project_number=%d project_folder_id=%s",
+        project_number,
+        project_folder_id,
+    )
+
     drive = build_drive_service_rw()
     sheets = build_sheets_service(settings.google_service_account_json)
 
+    _log.info("Resolving DEFINIÇÕES folder under project_folder_id=%s", project_folder_id)
     target_folder_id = resolve_definicoes_folder(drive, project_folder_id)
+    _log.info("DEFINIÇÕES folder resolved: %s", target_folder_id)
 
     new_sheets_id = _drive_copy_master_to_definicoes(
         drive,
@@ -358,9 +381,14 @@ def _generate_ldp_sheet_blocking(
     )
 
     try:
+        _log.info("Clearing 'Lista de definições' range on sheets_id=%s", new_sheets_id)
         _sheets_clear_range(sheets, new_sheets_id, _DEFINITIONS_DATA_RANGE)
+
         rows = map_definitions_to_rows(definitions)
         if rows:
+            _log.info(
+                "Writing %d definition rows into sheets_id=%s", len(rows), new_sheets_id
+            )
             _sheets_update_range(
                 sheets,
                 new_sheets_id,
@@ -368,6 +396,7 @@ def _generate_ldp_sheet_blocking(
                 rows,
             )
 
+        _log.info("Reading 'Projeto' tab grid on sheets_id=%s", new_sheets_id)
         projeto_grid = _sheets_get_grid(sheets, new_sheets_id, _PROJETO_SCAN_RANGE)
         updates = projeto_tab_updates(
             projeto_grid,
@@ -375,11 +404,21 @@ def _generate_ldp_sheet_blocking(
             cidade=state.get("cidade"),
             estado=state.get("estado"),
         )
+        if updates:
+            _log.info(
+                "Applying %d 'Projeto' tab cell updates on sheets_id=%s",
+                len(updates),
+                new_sheets_id,
+            )
         _sheets_batch_update(sheets, new_sheets_id, updates)
     except HttpError as exc:
         # Best-effort cleanup: deleta a planilha que copiamos pra não deixar
         # lixo flutuando se o ajuste pós-cópia falhou. Erros do delete são
         # silenciados — o erro original é o que importa.
+        _log.exception(
+            "Sheets API failed after copy; attempting cleanup of sheets_id=%s",
+            new_sheets_id,
+        )
         try:
             drive.files().delete(fileId=new_sheets_id, supportsAllDrives=True).execute()
         except Exception:
