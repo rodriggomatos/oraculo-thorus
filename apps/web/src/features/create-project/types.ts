@@ -59,6 +59,7 @@ export interface CreateProjectResponse {
   projectId: string;
   projectNumber: number;
   driveFolderPending: boolean;
+  definitionsCount: number;
 }
 
 

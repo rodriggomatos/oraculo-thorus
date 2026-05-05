@@ -84,6 +84,7 @@ describe("useCreateProjectFlow.start", () => {
       projectId: "p-1",
       projectNumber: 26024,
       driveFolderPending: true,
+      definitionsCount: 0,
     });
 
     await act(async () => {

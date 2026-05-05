@@ -16,7 +16,10 @@ from uuid import UUID
 
 from psycopg.rows import dict_row
 
+from oraculo_ai.core.config import get_settings
 from oraculo_ai.core.db import get_pool
+from oraculo_ai.ldp.master_reader import MasterRow
+from oraculo_ai.ldp.seed import filter_master_for_active
 from oraculo_ai.projects.drive import list_project_numbers_from_drive
 from oraculo_ai.scope.types import DisciplinaRow, ParsedOrcamento
 
@@ -152,10 +155,15 @@ async def create_project_with_scope(
     disciplinas: list[DisciplinaRow],
     created_by: UUID,
     city_ibge_code: str | None = None,
+    master_rows: list[MasterRow] | None = None,
 ) -> dict[str, Any]:
     """Idempotente em project_number — se já existe, retorna sem duplicar.
 
     Cria o registro em projects + version=1 de project_scope numa transação atômica.
+    Quando `master_rows` é fornecido, popula `definitions` com as perguntas da
+    Master R04 filtradas pelas categorias LDP ativas (regra do Raul). Tudo na
+    mesma transação: se a semeadura falhar, o projeto inteiro faz rollback.
+
     Pra re-uploads, use mark_versions_superseded + insert_new_scope_version.
     """
     pool = get_pool()
@@ -232,13 +240,101 @@ async def create_project_with_scope(
                     )
                 inserted += 1
 
-            return {
+            result: dict[str, Any] = {
                 "project_id": str(project_id),
                 "project_number": project_number,
                 "created": True,
                 "scope_inserted": inserted,
                 "scope_skipped": skipped,
+                "definitions_count": 0,
+                "definitions_by_discipline": {},
             }
+
+            if master_rows is not None:
+                seeded = await _populate_definitions_from_master(
+                    conn,
+                    project_id=project_id,
+                    user_id=created_by,
+                    master_rows=master_rows,
+                )
+                result["definitions_count"] = seeded["count"]
+                result["definitions_by_discipline"] = seeded["by_discipline"]
+
+            return result
+
+
+async def _active_ldp_discipline_names(conn: Any, project_id: UUID) -> list[str]:
+    """Aplica a regra do Raul intra-transação contra o `project_id` recém-inserido."""
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            """
+            SELECT DISTINCT ld.nome
+            FROM ldp_discipline ld
+            WHERE ld.sempre_ativa = TRUE
+               OR ld.id IN (
+                   SELECT m.ldp_discipline_id
+                   FROM project_scope ps
+                   JOIN scope_to_ldp_discipline m ON m.scope_template_id = ps.scope_template_id
+                   WHERE ps.project_id = %s
+                     AND ps.is_current = TRUE
+                     AND ps.incluir = TRUE
+               )
+            ORDER BY ld.nome
+            """,
+            (str(project_id),),
+        )
+        rows = await cur.fetchall()
+    return [str(r["nome"]) for r in rows]
+
+
+async def _populate_definitions_from_master(
+    conn: Any,
+    *,
+    project_id: UUID,
+    user_id: UUID,
+    master_rows: list[MasterRow],
+) -> dict[str, Any]:
+    """Insere as perguntas da Master R04 em `definitions` filtradas pelas categorias ativas."""
+    active_names = await _active_ldp_discipline_names(conn, project_id)
+    eligible = filter_master_for_active(master_rows, active_names)
+    if not eligible:
+        return {"count": 0, "by_discipline": {}}
+
+    settings = get_settings()
+    source_sheet_id = settings.ldp_master_sheet_id
+
+    by_discipline: dict[str, int] = {}
+    async with conn.cursor() as cur:
+        for row in eligible:
+            await cur.execute(
+                """
+                INSERT INTO definitions (
+                    project_id, disciplina, tipo, fase, item_code,
+                    pergunta, status,
+                    informacao_auxiliar, apoio_1, apoio_2,
+                    source_sheet_id, source_row,
+                    fonte_informacao, fonte_descricao,
+                    created_by_user_id, updated_by_user_id
+                ) VALUES (
+                    %s, %s, %s, %s, %s,
+                    %s, 'Em análise',
+                    %s, %s, %s,
+                    %s, %s,
+                    'lista_definicoes_inicial', 'Master R04 (auto-populate ao criar projeto)',
+                    %s, %s
+                )
+                """,
+                (
+                    str(project_id), row.disciplina, row.tipo, row.fase, row.item_code,
+                    row.pergunta,
+                    row.informacao_auxiliar, row.apoio_1, row.apoio_2,
+                    source_sheet_id, row.source_row,
+                    str(user_id), str(user_id),
+                ),
+            )
+            by_discipline[row.disciplina] = by_discipline.get(row.disciplina, 0) + 1
+
+    return {"count": len(eligible), "by_discipline": by_discipline}
 
 
 async def upload_new_scope_version(

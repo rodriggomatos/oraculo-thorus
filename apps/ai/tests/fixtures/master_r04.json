@@ -1,0 +1,22 @@
+{
+  "_comment": "Fixture representativa da Master R04 para tests unitários. Não é a planilha completa — só cobre as 10 disciplinas com 1-2 linhas cada e inclui ruído (linhas em branco, item sem pergunta, header com whitespace) pra exercer o parser.",
+  "values": [
+    [" Disciplina ", "Tipo", "Fase", "Item", "Definições", "Status", "Custo", "Opção escolhida", "Observações", "Validado", "Informação auxiliar", "APOIO 1", "APOIO 2"],
+    ["Geral", "Cadastro", "Fase 00", "GER01", "Quem é o cliente?", "", "", "", "", "", "", "", ""],
+    ["Geral", "Cadastro", "Fase 00", "GER02", "Endereço completo da obra?", "", "", "", "", "", "Auxiliar GER02", "apoio A", ""],
+    ["Hidráulica", "Apartamento", "Fase 01", "HID01", "Material da tubulação de água fria?", "", "", "", "", "", "", "", ""],
+    ["Hidráulica", "Apartamento", "Fase 01", "HID02", "Bitola dos pontos?", "", "", "", "", "", "", "", ""],
+    ["Sanitário", "Área comum", "Fase 01", "SAN01", "Tipo de esgoto na lavanderia?", "", "", "", "", "", "", "", ""],
+    ["", "", "", "", "", "", "", "", "", "", "", "", ""],
+    ["Elétrico / Comunicação", "Apartamento", "Fase 01", "ELE01", "Tomadas USB nos quartos?", "", "", "", "", "", "", "", ""],
+    ["Elétrico / Comunicação", "Apartamento", "Fase 02", "ELE02", "Iluminação no terraço?", "", "", "", "", "", "", "", ""],
+    ["SPDA", "Cobertura", "Fase 03", "SPDA01", "Sistema externo ou Faraday?", "", "", "", "", "", "", "", ""],
+    ["Climatização", "Área comum", "Fase 02", "CLI01", "Salões: split ou VRF?", "", "", "", "", "", "", "", ""],
+    ["Gás", "Área comum", "Fase 01", "GAS01", "Material da tubulação de gás?", "", "", "", "", "", "", "", ""],
+    ["Sprinkler", "Garagem", "Fase 02", "SPK01", "Cobertura total ou parcial?", "", "", "", "", "", "", "", ""],
+    ["Preventivo", "Área comum", "Fase 03", "PREV01", "Tipo de detector na escada?", "", "", "", "", "", "", "", ""],
+    ["Piscina", "Área comum", "Fase 02", "PIS01", "Aquecimento da piscina?", "", "", "", "", "", "", "", ""],
+    ["Disciplina inventada", "x", "y", "INV01", "Não deve aparecer em projeto algum", "", "", "", "", "", "", "", ""],
+    ["Geral", "Cadastro", "Fase 00", "INCOMPLETO", "", "", "", "", "", "", "", "", ""]
+  ]
+}

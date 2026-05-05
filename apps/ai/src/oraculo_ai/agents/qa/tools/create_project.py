@@ -27,6 +27,7 @@ from langchain_core.tools import tool
 from langgraph.types import interrupt
 
 from oraculo_ai.agents.qa.schema import UserContext
+from oraculo_ai.ldp import read_master_r04
 from oraculo_ai.permissions import PermissionDeniedError, check_permission
 from oraculo_ai.projects.repository import (
     create_project_with_scope,
@@ -160,6 +161,15 @@ def make_create_project(user: UserContext) -> Callable[..., Awaitable[Any]]:
         metadata = _coerce_metadata(metadata_value)
 
         try:
+            master_rows = await read_master_r04()
+        except PermissionError as exc:
+            _cache_clear(thread_id, spreadsheet_id)
+            return {
+                "status": "spreadsheet_inaccessible",
+                "message": str(exc),
+            }
+
+        try:
             result = await create_project_with_scope(
                 project_number=confirmed_number,
                 name=f"{confirmed_number} - {metadata['cliente']} - {metadata['empreendimento']}",
@@ -170,6 +180,7 @@ def make_create_project(user: UserContext) -> Callable[..., Awaitable[Any]]:
                 orcamento_sheets_id=spreadsheet_id,
                 disciplinas=parsed.disciplinas,
                 created_by=user.user_id,
+                master_rows=master_rows,
             )
         except Exception as exc:
             return {
@@ -196,6 +207,8 @@ def make_create_project(user: UserContext) -> Callable[..., Awaitable[Any]]:
             "drive_folder_pending": True,
             "scope_inserted": result.get("scope_inserted", 0),
             "scope_skipped": result.get("scope_skipped", []),
+            "definitions_count": result.get("definitions_count", 0),
+            "definitions_by_discipline": result.get("definitions_by_discipline", {}),
         }
 
     return create_project

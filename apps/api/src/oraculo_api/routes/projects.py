@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from oraculo_ai.agents.qa.repository import ProjectRepository
+from oraculo_ai.ldp import read_master_r04
 from oraculo_ai.permissions import check_permission
 from oraculo_ai.projects import create_project_with_scope, get_next_project_number
 from oraculo_ai.scope import parse_orcamento_from_sheets, validate_against_template
@@ -67,6 +68,8 @@ class CreateProjectResponse(BaseModel):
     scope_inserted: int = 0
     scope_skipped: list[str] = []
     already_existed: bool = False
+    definitions_count: int = 0
+    definitions_by_discipline: dict[str, int] = {}
 
 
 @router.post("/projects/suggest-number", response_model=SuggestNumberResponse)
@@ -112,6 +115,11 @@ async def create_project_endpoint(
     except PermissionError as exc:
         raise HTTPException(status_code=403, detail=str(exc))
 
+    try:
+        master_rows = await read_master_r04()
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc))
+
     name = (
         f"{body.confirmed_number} - "
         f"{body.metadata.cliente} - "
@@ -135,6 +143,7 @@ async def create_project_endpoint(
         disciplinas=parsed.disciplinas,
         created_by=user.user_id,
         city_ibge_code=city_ibge_code,
+        master_rows=master_rows,
     )
 
     return CreateProjectResponse(
@@ -144,4 +153,6 @@ async def create_project_endpoint(
         scope_inserted=int(result.get("scope_inserted", 0)),
         scope_skipped=list(result.get("scope_skipped", [])),
         already_existed=not bool(result.get("created", True)),
+        definitions_count=int(result.get("definitions_count", 0)),
+        definitions_by_discipline=dict(result.get("definitions_by_discipline", {})),
     )

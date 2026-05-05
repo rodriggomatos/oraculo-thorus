@@ -191,13 +191,18 @@ export function useCreateProjectFlow(
           cityId,
         });
         dispatch({ type: "CREATED", result });
+        const definitionsLine =
+          result.definitionsCount > 0
+            ? `📋 ${result.definitionsCount} perguntas adicionadas à Lista de Definições\n\n`
+            : "";
         onAssistantMessage(
           `✅ Projeto **${result.projectNumber}** criado.\n\n` +
             `- Cliente: ${metadata.cliente || "—"}\n` +
             `- Empreendimento: ${metadata.empreendimento || "—"}\n` +
             `- Cidade: ${metadata.cidade || "—"}\n` +
             (metadata.estado ? `- Estado: ${metadata.estado}\n` : "") +
-            `\n⚠️ A pasta no Drive ainda precisa ser criada manualmente. No próximo sprint isso será automático.`,
+            `\n${definitionsLine}` +
+            `⚠️ A pasta no Drive ainda precisa ser criada manualmente. No próximo sprint isso será automático.`,
         );
       } catch (e) {
         const message = e instanceof Error ? e.message : "Falha ao criar projeto";

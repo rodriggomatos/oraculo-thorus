@@ -41,12 +41,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     project_id: string;
     project_number: number;
     drive_folder_pending: boolean;
+    definitions_count?: number;
   };
 
   const remapped: CreateProjectResponse = {
     projectId: data.project_id,
     projectNumber: data.project_number,
     driveFolderPending: data.drive_folder_pending,
+    definitionsCount: data.definitions_count ?? 0,
   };
 
   return NextResponse.json(remapped, { status: 200 });

@@ -53,6 +53,9 @@ class Settings(BaseSettings):
 
     thorus_drive_root_id: str = "0AGS3i6FJiluJUk9PVA"
 
+    ldp_master_sheet_id: str = "1zVwOQQVe6MAZoi4HV8sL1muKlNHZDf_G9F06E7h9aOE"
+    ldp_master_tab: str = "Lista de definições"
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
