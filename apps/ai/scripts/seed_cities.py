@@ -28,25 +28,57 @@ _IBGE_URL = "https://servicodados.ibge.gov.br/api/v1/localidades/municipios"
 _BATCH_SIZE = 500
 
 
-async def fetch_ibge_municipios() -> list[tuple[str, str, str]]:
-    """Retorna lista de (ibge_code, nome, estado) puxada da API IBGE."""
+def _safe_chain(data: Any, keys: list[str]) -> Any:
+    """Navega keys aninhadas com tolerância a None/ausente em qualquer nível."""
+    cursor: Any = data
+    for key in keys:
+        if not isinstance(cursor, dict):
+            return None
+        cursor = cursor.get(key)
+        if cursor is None:
+            return None
+    return cursor
+
+
+def _extract_sigla(m: dict[str, Any]) -> str | None:
+    """Tenta caminhos conhecidos da resposta IBGE pra encontrar a UF.
+
+    Caminho primário (estrutura clássica):
+        microrregiao.mesorregiao.UF.sigla
+    Fallback (estrutura nova com regiao-imediata):
+        regiao-imediata.regiao-intermediaria.UF.sigla
+    """
+    sigla = _safe_chain(m, ["microrregiao", "mesorregiao", "UF", "sigla"])
+    if isinstance(sigla, str) and sigla:
+        return sigla
+    sigla = _safe_chain(
+        m, ["regiao-imediata", "regiao-intermediaria", "UF", "sigla"]
+    )
+    if isinstance(sigla, str) and sigla:
+        return sigla
+    return None
+
+
+async def fetch_ibge_municipios() -> tuple[list[tuple[str, str, str]], list[str]]:
+    """Retorna ([(ibge_code, nome, estado)], [warnings])."""
     async with httpx.AsyncClient(timeout=60.0) as client:
         response = await client.get(_IBGE_URL)
         response.raise_for_status()
         items: list[dict[str, Any]] = response.json()
 
     rows: list[tuple[str, str, str]] = []
+    warnings: list[str] = []
     for m in items:
-        sigla = (
-            m.get("microrregiao", {})
-            .get("mesorregiao", {})
-            .get("UF", {})
-            .get("sigla")
-        )
+        sigla = _extract_sigla(m)
         if not sigla:
+            ibge_id = m.get("id")
+            nome = m.get("nome")
+            warnings.append(
+                f"sem UF identificável: id={ibge_id!r} nome={nome!r}"
+            )
             continue
-        rows.append((str(m["id"]), str(m["nome"]), str(sigla)))
-    return rows
+        rows.append((str(m["id"]), str(m["nome"]), sigla))
+    return rows, warnings
 
 
 async def insert_cities(rows: list[tuple[str, str, str]]) -> int:
@@ -77,8 +109,14 @@ async def _run() -> int:
     await init_db(settings.database_url, pool_size=2)
     try:
         print(f"Fetching IBGE municipios from {_IBGE_URL}…")
-        rows = await fetch_ibge_municipios()
-        print(f"Fetched {len(rows)} municípios.")
+        rows, warnings = await fetch_ibge_municipios()
+        print(f"Fetched {len(rows)} municípios with valid UF.")
+        if warnings:
+            print(f"Pulados {len(warnings)} municípios sem UF identificável:")
+            for w in warnings[:10]:
+                print(f"  AVISO: {w}")
+            if len(warnings) > 10:
+                print(f"  ... e mais {len(warnings) - 10}")
 
         if not rows:
             print("ERRO: IBGE retornou lista vazia.")
