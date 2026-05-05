@@ -29,7 +29,6 @@ def _make_row(
 def test_clean_orcamento_passes() -> None:
     parsed = ParsedOrcamento(
         spreadsheet_id="abc",
-        estado="SC",
         disciplinas=[
             _make_row("Hidrossanitário + Drenagem"),
             _make_row("SPDA"),
@@ -44,7 +43,6 @@ def test_clean_orcamento_passes() -> None:
 def test_disciplina_fora_template_vira_error() -> None:
     parsed = ParsedOrcamento(
         spreadsheet_id="abc",
-        estado="SC",
         disciplinas=[
             _make_row("Hidrossanitário + Drenagem"),
             _make_row("Geotermia"),
@@ -59,7 +57,6 @@ def test_disciplina_fora_template_vira_error() -> None:
 def test_legal_invalido_vira_error() -> None:
     parsed = ParsedOrcamento(
         spreadsheet_id="abc",
-        estado="SC",
         disciplinas=[_make_row("SPDA", legal="misto")],
     )
     result = validate_against_template(parsed, _TEMPLATE)
@@ -67,33 +64,11 @@ def test_legal_invalido_vira_error() -> None:
     assert "LEGAL_INVALIDO" in codes
 
 
-def test_estado_invalido_vira_error() -> None:
-    parsed = ParsedOrcamento(
-        spreadsheet_id="abc",
-        estado="XX",
-        disciplinas=[_make_row("SPDA")],
-    )
-    result = validate_against_template(parsed, _TEMPLATE)
-    codes = [e.code for e in result.errors]
-    assert "ESTADO_INVALIDO" in codes
-
-
 def test_disciplina_faltando_vira_warning() -> None:
     parsed = ParsedOrcamento(
         spreadsheet_id="abc",
-        estado="SC",
         disciplinas=[_make_row("SPDA")],
     )
     result = validate_against_template(parsed, _TEMPLATE)
     codes = [w.code for w in result.warnings]
     assert "DISCIPLINA_FALTANDO" in codes
-
-
-def test_estado_none_passa() -> None:
-    parsed = ParsedOrcamento(
-        spreadsheet_id="abc",
-        estado=None,
-        disciplinas=[_make_row("Hidrossanitário + Drenagem"), _make_row("SPDA"), _make_row("Climatização")],
-    )
-    result = validate_against_template(parsed, _TEMPLATE)
-    assert result.ok

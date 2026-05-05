@@ -11,12 +11,10 @@ Acesso ao pool central via oraculo_ai.core.db.get_pool().
 """
 
 import logging
-from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
 from psycopg.rows import dict_row
-from psycopg.types.json import Json
 
 from oraculo_ai.core.db import get_pool
 from oraculo_ai.projects.drive import list_project_numbers_from_drive
@@ -150,11 +148,6 @@ async def create_project_with_scope(
     empreendimento: str,
     cidade: str,
     estado: str | None,
-    area_m2: Decimal | None,
-    fluxo: str | None,
-    custo_fator: Decimal | None,
-    total_contratado: Decimal | None,
-    margem: Decimal | None,
     orcamento_sheets_id: str,
     disciplinas: list[DisciplinaRow],
     created_by: UUID,
@@ -186,14 +179,12 @@ async def create_project_with_scope(
                     """
                     INSERT INTO projects (
                         project_number, name, client, empreendimento, cidade,
-                        estado, area_m2, fluxo, custo_fator,
-                        total_contratado, margem,
+                        estado,
                         orcamento_sheets_id, created_by, status,
                         city_ibge_code
                     ) VALUES (
                         %s, %s, %s, %s, %s,
-                        %s, %s, %s, %s,
-                        %s, %s,
+                        %s,
                         %s, %s, 'active',
                         %s
                     )
@@ -201,8 +192,7 @@ async def create_project_with_scope(
                     """,
                     (
                         project_number, name, client_clean, empreendimento_clean, cidade_clean,
-                        estado_clean, area_m2, _empty_to_none(fluxo), custo_fator,
-                        total_contratado, margem,
+                        estado_clean,
                         orcamento_sheets_id, str(created_by),
                         _empty_to_none(city_ibge_code),
                     ),

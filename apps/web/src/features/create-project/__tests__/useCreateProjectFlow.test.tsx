@@ -83,8 +83,6 @@ describe("useCreateProjectFlow.start", () => {
     vi.mocked(mockApi.createProject).mockResolvedValueOnce({
       projectId: "p-1",
       projectNumber: 26024,
-      totalContratado: 100,
-      margem: 0.25,
       driveFolderPending: true,
     });
 

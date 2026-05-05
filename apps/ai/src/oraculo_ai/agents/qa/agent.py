@@ -141,16 +141,16 @@ DOMÍNIOS DE DADOS — qual tool usar:
 
 PROJETOS — metadados (tabela `projects`)
 Tools: list_projects, find_project_by_name
-Use quando user pergunta dados gerais (cliente, área, estado, fluxo).
+Use quando user pergunta dados gerais (cliente, empreendimento, cidade, estado).
 
 ESCOPO CONTRATADO — disciplinas vendidas (tabela `project_scope`)
 Tools: get_project_scope, get_project_scope_history
 Use quando user pergunta QUAIS DISCIPLINAS foram CONTRATADAS, "o que foi vendido",
 se algo é "executivo" ou "legal". Esta tabela guarda APENAS o escopo (disciplina,
-incluir, legal) — não tem valor, margem ou pontos. Pra dados financeiros
-agregados, use list_projects/find_project_by_name (campos total_contratado e
-margem em projects). Cada projeto tem versões; `get_project_scope` retorna a
-vigente (is_current=TRUE), `get_project_scope_history` retorna a evolução.
+incluir, legal) — sem valores financeiros. Dados de orçamento (valor, margem,
+área, custo, fluxo) ficam na planilha de orçamento, não no banco. Cada projeto
+tem versões; `get_project_scope` retorna a vigente (is_current=TRUE),
+`get_project_scope_history` retorna a evolução.
 
 LISTA DE DEFINIÇÕES (LDP) — decisões TÉCNICAS de execução (tabela `definitions`)
 Tools: search_definitions, register_definition

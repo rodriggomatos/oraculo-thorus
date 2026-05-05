@@ -58,8 +58,6 @@ export interface CreateProjectRequest {
 export interface CreateProjectResponse {
   projectId: string;
   projectNumber: number;
-  totalContratado: number;
-  margem: number;
   driveFolderPending: boolean;
 }
 

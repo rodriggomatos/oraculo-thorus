@@ -103,7 +103,7 @@ def make_create_project(user: UserContext) -> Callable[..., Awaitable[Any]]:
         Fluxo: sugere número → confirma com user → parseia planilha → valida →
         decide sobre warnings → coleta metadados → cria projeto + escopo (atomic).
 
-        Returns dict com status, project_id, project_number, total_contratado, margem.
+        Returns dict com status, project_id, project_number, scope_inserted.
         """
         if not check_permission(user, "create_project"):
             return {
@@ -166,12 +166,7 @@ def make_create_project(user: UserContext) -> Callable[..., Awaitable[Any]]:
                 client=metadata["cliente"],
                 empreendimento=metadata["empreendimento"],
                 cidade=metadata["cidade"],
-                estado=parsed.estado,
-                area_m2=parsed.area_m2,
-                fluxo=parsed.fluxo,
-                custo_fator=parsed.custo_fator,
-                total_contratado=parsed.total_contratado,
-                margem=parsed.margem,
+                estado=None,
                 orcamento_sheets_id=spreadsheet_id,
                 disciplinas=parsed.disciplinas,
                 created_by=user.user_id,
@@ -198,8 +193,6 @@ def make_create_project(user: UserContext) -> Callable[..., Awaitable[Any]]:
             "status": "success",
             "project_id": result["project_id"],
             "project_number": result["project_number"],
-            "total_contratado": float(parsed.total_contratado) if parsed.total_contratado else None,
-            "margem": float(parsed.margem) if parsed.margem else None,
             "drive_folder_pending": True,
             "scope_inserted": result.get("scope_inserted", 0),
             "scope_skipped": result.get("scope_skipped", []),

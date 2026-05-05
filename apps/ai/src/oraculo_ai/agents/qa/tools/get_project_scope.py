@@ -18,7 +18,7 @@ async def get_project_scope(project_number: int) -> list[dict[str, Any]]:
     Use quando user pergunta quais DISCIPLINAS foram CONTRATADAS, "o que foi
     vendido", "quais entregas foram pedidas", se uma disciplina é executivo
     ou legal. NÃO traz dados financeiros (valor, margem, pontos) — esses ficam
-    em projects.total_contratado/margem ou na planilha de orçamento.
+    apenas na planilha de orçamento, não no banco.
     NÃO confunde com search_definitions (decisões TÉCNICAS de execução).
 
     Args:

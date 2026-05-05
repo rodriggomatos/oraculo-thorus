@@ -3,7 +3,6 @@
 ERRORS (bloqueiam se user não confirmar via interrupt):
 - DISCIPLINA_FORA_TEMPLATE: nome de disciplina não existe em scope_template
 - LEGAL_INVALIDO: valor diferente de 'executivo' ou 'legal'
-- ESTADO_INVALIDO: não está em (SC, PR, MG, SP, RS, RO, ES)
 
 WARNINGS (informa, não bloqueia):
 - DISCIPLINA_FALTANDO: disciplina do template não está na planilha
@@ -12,7 +11,6 @@ WARNINGS (informa, não bloqueia):
 from collections.abc import Iterable
 
 from oraculo_ai.scope.types import (
-    VALID_ESTADOS,
     VALID_LEGAL,
     ParsedOrcamento,
     ValidationIssue,
@@ -27,17 +25,6 @@ def validate_against_template(
     template_set = {name.strip() for name in template_disciplines}
     errors: list[ValidationIssue] = []
     warnings: list[ValidationIssue] = []
-
-    if parsed.estado is not None and parsed.estado not in VALID_ESTADOS:
-        errors.append(
-            ValidationIssue(
-                code="ESTADO_INVALIDO",
-                severity="error",
-                message=f"Estado {parsed.estado!r} inválido (esperado: {sorted(VALID_ESTADOS)})",
-                field="estado",
-                value=parsed.estado,
-            )
-        )
 
     seen_disciplines: set[str] = set()
     for row in parsed.disciplinas:

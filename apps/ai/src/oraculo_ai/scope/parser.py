@@ -1,25 +1,16 @@
 """Parser da planilha de orçamento Thórus via Google Sheets API.
 
-Layout conhecido (aba 'orçamento'):
+Lê APENAS o que pertence ao escopo do projeto pra gerar a Lista de Definições.
+Tudo o resto (estado, área, fluxo, custo, total contratado, margem) ou vem do
+form do user (estado) ou é responsabilidade da planilha de orçamento — não
+desse parser.
 
-Inputs do operador:
-  D2 → estado (SC/PR/MG/SP/RS/RO/ES)
-  C3 → custo_fator
-  D4 → fluxo (texto)
-  G2 → area_m2
+Layout (aba 'orçamento'):
 
-Disciplinas (R3:W46) — só campos que descrevem o escopo do projeto:
+Disciplinas (R3:W46) — só campos de escopo:
   R: disciplina (nome — deve bater com scope_template.nome)
   S: incluir (bool)
   W: legal ('executivo' | 'legal')
-
-Colunas T/U/V/X/Y/Z (unificar, essencial, pontos, peso, ponto_fixo,
-pontos_calculados) são domínio comercial e ficam apenas na planilha de
-orçamento — não são responsabilidade desse parser.
-
-Agregados:
-  G8  → total_contratado
-  K16 → margem
 
 A service account precisa estar compartilhada como leitora na planilha.
 SpreadsheetNotFound vira PermissionError com mensagem orientando o user.
@@ -27,7 +18,6 @@ SpreadsheetNotFound vira PermissionError com mensagem orientando o user.
 
 import asyncio
 import json
-from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
@@ -39,14 +29,6 @@ from oraculo_ai.scope.types import DisciplinaRow, ParsedOrcamento
 
 
 _SHEET_NAME = "orçamento"
-_INPUT_RANGES: dict[str, str] = {
-    "estado": f"{_SHEET_NAME}!D2",
-    "custo_fator": f"{_SHEET_NAME}!C3",
-    "fluxo": f"{_SHEET_NAME}!D4",
-    "area_m2": f"{_SHEET_NAME}!G2",
-    "total_contratado": f"{_SHEET_NAME}!G8",
-    "margem": f"{_SHEET_NAME}!K16",
-}
 _DISCIPLINAS_RANGE = f"{_SHEET_NAME}!R3:W46"
 
 
@@ -57,16 +39,6 @@ def _normalize_bool(value: Any) -> bool:
         return False
     text = str(value).strip().lower()
     return text in {"true", "verdadeiro", "sim", "x", "1", "yes"}
-
-
-def _parse_decimal(value: Any) -> Decimal | None:
-    if value is None or value == "":
-        return None
-    text = str(value).strip().replace(".", "").replace(",", ".") if "," in str(value) else str(value).strip()
-    try:
-        return Decimal(text)
-    except (InvalidOperation, ValueError):
-        return None
 
 
 def _trim(value: Any) -> str | None:
@@ -102,14 +74,14 @@ async def parse_orcamento_from_sheets(spreadsheet_id: str) -> ParsedOrcamento:
 
     service = build_sheets_service(settings.google_service_account_json)
 
-    def _batch_get(ranges: list[str]) -> dict[str, list[list[Any]]]:
+    def _fetch_disciplinas() -> list[list[Any]]:
         try:
             result = (
                 service.spreadsheets()
                 .values()
-                .batchGet(
+                .get(
                     spreadsheetId=spreadsheet_id,
-                    ranges=ranges,
+                    range=_DISCIPLINAS_RANGE,
                     valueRenderOption="UNFORMATTED_VALUE",
                 )
                 .execute()
@@ -128,36 +100,10 @@ async def parse_orcamento_from_sheets(spreadsheet_id: str) -> ParsedOrcamento:
                     + hint
                 ) from exc
             raise
-        out: dict[str, list[list[Any]]] = {}
-        for value_range in result.get("valueRanges", []):
-            range_name = value_range.get("range", "")
-            out[range_name] = value_range.get("values", [])
-        return out
+        rows = result.get("values", [])
+        return rows  # type: ignore[no-any-return]
 
-    all_ranges = list(_INPUT_RANGES.values()) + [_DISCIPLINAS_RANGE]
-    fetched = await asyncio.to_thread(_batch_get, all_ranges)
-
-    def _scalar_at(range_name: str) -> Any:
-        candidates = [k for k in fetched if range_name.split("!")[-1] in k]
-        if not candidates:
-            return None
-        rows = fetched[candidates[0]]
-        if not rows or not rows[0]:
-            return None
-        return rows[0][0]
-
-    estado = _trim(_scalar_at(_INPUT_RANGES["estado"]))
-    custo_fator = _parse_decimal(_scalar_at(_INPUT_RANGES["custo_fator"]))
-    fluxo = _trim(_scalar_at(_INPUT_RANGES["fluxo"]))
-    area_m2 = _parse_decimal(_scalar_at(_INPUT_RANGES["area_m2"]))
-    total_contratado = _parse_decimal(_scalar_at(_INPUT_RANGES["total_contratado"]))
-    margem = _parse_decimal(_scalar_at(_INPUT_RANGES["margem"]))
-
-    disciplinas_rows: list[list[Any]] = []
-    for key, rows in fetched.items():
-        if "R3" in key:
-            disciplinas_rows = rows
-            break
+    disciplinas_rows = await asyncio.to_thread(_fetch_disciplinas)
 
     disciplinas: list[DisciplinaRow] = []
     for offset, row in enumerate(disciplinas_rows):
@@ -177,11 +123,5 @@ async def parse_orcamento_from_sheets(spreadsheet_id: str) -> ParsedOrcamento:
 
     return ParsedOrcamento(
         spreadsheet_id=spreadsheet_id,
-        estado=estado,
-        custo_fator=custo_fator,
-        fluxo=fluxo,
-        area_m2=area_m2,
-        total_contratado=total_contratado,
-        margem=margem,
         disciplinas=disciplinas,
     )

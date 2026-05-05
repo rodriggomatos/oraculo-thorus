@@ -63,8 +63,6 @@ class CreateProjectRequest(BaseModel):
 class CreateProjectResponse(BaseModel):
     project_id: str
     project_number: int
-    total_contratado: float | None
-    margem: float | None
     drive_folder_pending: bool = True
     scope_inserted: int = 0
     scope_skipped: list[str] = []
@@ -120,8 +118,7 @@ async def create_project_endpoint(
         f"{body.metadata.empreendimento}"
     )
 
-    form_estado = (body.metadata.estado or "").strip() or None
-    estado = form_estado if form_estado is not None else parsed.estado
+    estado = (body.metadata.estado or "").strip() or None
 
     city_ibge_code = (
         str(body.metadata.city_id) if body.metadata.city_id is not None else None
@@ -134,11 +131,6 @@ async def create_project_endpoint(
         empreendimento=body.metadata.empreendimento,
         cidade=body.metadata.cidade,
         estado=estado,
-        area_m2=parsed.area_m2,
-        fluxo=parsed.fluxo,
-        custo_fator=parsed.custo_fator,
-        total_contratado=parsed.total_contratado,
-        margem=parsed.margem,
         orcamento_sheets_id=body.spreadsheet_id,
         disciplinas=parsed.disciplinas,
         created_by=user.user_id,
@@ -148,8 +140,6 @@ async def create_project_endpoint(
     return CreateProjectResponse(
         project_id=str(result["project_id"]),
         project_number=int(result["project_number"]),
-        total_contratado=float(parsed.total_contratado) if parsed.total_contratado else None,
-        margem=float(parsed.margem) if parsed.margem else None,
         drive_folder_pending=True,
         scope_inserted=int(result.get("scope_inserted", 0)),
         scope_skipped=list(result.get("scope_skipped", [])),
