@@ -6,6 +6,7 @@ import {
   parseSpreadsheet,
   suggestNumber,
 } from "../mock";
+import { extractSpreadsheetId } from "../spreadsheet-url";
 import type {
   CreateProjectResponse,
   CreateProjectState,
@@ -250,11 +251,8 @@ export function useCreateProjectFlow(
           );
           return;
         case "awaiting_spreadsheet": {
-          const urlMatch = text.match(
-            /docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/,
-          );
-          if (urlMatch) {
-            const spreadsheetId = urlMatch[1];
+          const spreadsheetId = extractSpreadsheetId(text);
+          if (spreadsheetId) {
             await processSpreadsheet(spreadsheetId, `Sheets ${spreadsheetId}`);
             return;
           }
