@@ -31,6 +31,7 @@ from oraculo_ai.ldp import read_master_r04
 from oraculo_ai.permissions import PermissionDeniedError, check_permission
 from oraculo_ai.projects.repository import (
     create_project_with_scope,
+    format_project_name,
     get_next_project_number,
     get_scope_template_names,
 )
@@ -172,7 +173,13 @@ def make_create_project(user: UserContext) -> Callable[..., Awaitable[Any]]:
         try:
             result = await create_project_with_scope(
                 project_number=confirmed_number,
-                name=f"{confirmed_number} - {metadata['cliente']} - {metadata['empreendimento']}",
+                name=format_project_name(
+                    project_number=confirmed_number,
+                    client=metadata["cliente"],
+                    empreendimento=metadata["empreendimento"],
+                    cidade=metadata["cidade"],
+                    estado=None,
+                ),
                 client=metadata["cliente"],
                 empreendimento=metadata["empreendimento"],
                 cidade=metadata["cidade"],

@@ -3,6 +3,7 @@
 from oraculo_ai.projects.repository import (
     ProjectScopeRow,
     create_project_with_scope,
+    format_project_name,
     get_active_ldp_disciplines,
     get_next_project_number,
     get_project_drive_state,
@@ -16,6 +17,7 @@ from oraculo_ai.projects.repository import (
 __all__ = [
     "ProjectScopeRow",
     "create_project_with_scope",
+    "format_project_name",
     "get_active_ldp_disciplines",
     "get_next_project_number",
     "get_project_drive_state",

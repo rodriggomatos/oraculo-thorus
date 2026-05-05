@@ -18,6 +18,7 @@ from oraculo_ai.ldp import read_master_r04
 from oraculo_ai.permissions import check_permission
 from oraculo_ai.projects import (
     create_project_with_scope,
+    format_project_name,
     get_next_project_number,
     get_project_drive_state,
     update_drive_folder_path,
@@ -143,13 +144,15 @@ async def create_project_endpoint(
     except PermissionError as exc:
         raise HTTPException(status_code=403, detail=str(exc))
 
-    name = (
-        f"{body.confirmed_number} - "
-        f"{body.metadata.cliente} - "
-        f"{body.metadata.empreendimento}"
-    )
-
     estado = (body.metadata.estado or "").strip() or None
+
+    name = format_project_name(
+        project_number=body.confirmed_number,
+        client=body.metadata.cliente,
+        empreendimento=body.metadata.empreendimento,
+        cidade=body.metadata.cidade,
+        estado=estado,
+    )
 
     city_ibge_code = (
         str(body.metadata.city_id) if body.metadata.city_id is not None else None

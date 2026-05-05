@@ -184,6 +184,37 @@ def _empty_to_none(value: str | None) -> str | None:
     return stripped or None
 
 
+def format_project_name(
+    *,
+    project_number: int,
+    client: str | None,
+    empreendimento: str | None,
+    cidade: str | None,
+    estado: str | None,
+) -> str:
+    """Monta o `projects.name` no padrão Thórus.
+
+    Padrão: "{number} - {client} - {empreendimento} - {cidade} - {estado}".
+
+    Defensivo: cada parte vazia/None vira "—" (em vez de quebrar o formato ou
+    deixar segmentos colapsando). Cidade e estado vêm do form via metadata,
+    então normalmente sempre estão preenchidos; o placeholder cobre o caminho
+    do agent tool (que ainda não coleta estado pela conversa) e edge cases.
+    """
+
+    def _or_dash(value: str | None) -> str:
+        cleaned = _empty_to_none(value)
+        return cleaned if cleaned else "—"
+
+    return (
+        f"{project_number} - "
+        f"{_or_dash(client)} - "
+        f"{_or_dash(empreendimento)} - "
+        f"{_or_dash(cidade)} - "
+        f"{_or_dash(estado)}"
+    )
+
+
 async def create_project_with_scope(
     *,
     project_number: int,
