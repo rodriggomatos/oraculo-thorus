@@ -78,3 +78,100 @@ def test_parse_master_rejects_invalid_header():
 
 def test_parse_master_handles_empty_input():
     assert parse_master_rows([]) == []
+
+
+def test_parse_master_accepts_verbose_header_names():
+    # Esse é o header real da Master R04 R04 atual: "Informação auxiliar"
+    # ganhou um sufixo descritivo. Match por prefixo deve aceitar.
+    values = [
+        [
+            "Disciplina",
+            "Tipo",
+            "Fase",
+            "Item",
+            "Definições",
+            "Status",
+            "Custo",
+            "Opção escolhida",
+            "Observações",
+            "Validado",
+            "Informação auxiliar para tomada de decisão (EX: exemplo)",
+            "APOIO 1",
+            "APOIO 2",
+        ],
+        [
+            "Geral",
+            "Cadastro",
+            "Fase 00",
+            "GER01",
+            "Quem é o cliente?",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "Detalhe extra",
+            "apoio A",
+            "apoio B",
+        ],
+    ]
+    rows = parse_master_rows(values)
+    assert len(rows) == 1
+    assert rows[0].informacao_auxiliar == "Detalhe extra"
+    assert rows[0].apoio_1 == "apoio A"
+    assert rows[0].apoio_2 == "apoio B"
+
+
+def test_parse_master_accepts_underscored_apoio_headers():
+    values = [
+        [
+            "Disciplina",
+            "Tipo",
+            "Fase",
+            "Item",
+            "Definições",
+            "Informação auxiliar",
+            "apoio_1",
+            "apoio_2",
+        ],
+        ["Geral", "C", "F", "X1", "Pergunta?", "", "a1", "a2"],
+    ]
+    rows = parse_master_rows(values)
+    assert len(rows) == 1
+    assert rows[0].apoio_1 == "a1"
+    assert rows[0].apoio_2 == "a2"
+
+
+def test_parse_master_header_match_is_case_insensitive():
+    values = [
+        [
+            "DISCIPLINA",
+            "tipo",
+            "FASE",
+            "Item",
+            "PERGUNTA",
+            "Informacao Auxiliar",
+            "APOIO 1",
+            "APOIO 2",
+        ],
+        ["Geral", "C", "F", "X1", "?", "", "", ""],
+    ]
+    rows = parse_master_rows(values)
+    assert len(rows) == 1
+
+
+def test_parse_master_reports_missing_field_in_error():
+    with pytest.raises(ValueError, match="apoio_2"):
+        parse_master_rows(
+            [
+                [
+                    "Disciplina",
+                    "Tipo",
+                    "Fase",
+                    "Item",
+                    "Definições",
+                    "Informação auxiliar",
+                    "APOIO 1",
+                ],
+            ]
+        )

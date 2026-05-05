@@ -41,16 +41,19 @@ class MasterRow(BaseModel):
     source_row: int
 
 
-_HEADER_REQUIRED: tuple[str, ...] = (
-    "Disciplina",
-    "Tipo",
-    "Fase",
-    "Item",
-    "Definições",
-    "Informação auxiliar",
-    "APOIO 1",
-    "APOIO 2",
-)
+# Match por prefixo case-insensitive: tolerante a variações como
+# "Informação auxiliar para tomada de decisão (EX: …)" — basta o header começar
+# com algum dos prefixos canônicos.
+_FIELD_PREFIXES: dict[str, tuple[str, ...]] = {
+    "disciplina": ("disciplina",),
+    "tipo": ("tipo",),
+    "fase": ("fase",),
+    "item": ("item",),
+    "pergunta": ("definições", "definicoes", "pergunta"),
+    "informacao_auxiliar": ("informação auxiliar", "informacao auxiliar"),
+    "apoio_1": ("apoio 1", "apoio_1"),
+    "apoio_2": ("apoio 2", "apoio_2"),
+}
 
 
 def _trim(value: Any) -> str | None:
@@ -60,9 +63,28 @@ def _trim(value: Any) -> str | None:
     return text or None
 
 
-def _required(value: Any) -> str | None:
-    text = _trim(value)
-    return text
+def _normalize_header(value: Any) -> str:
+    return str(value).strip().casefold()
+
+
+def _map_header_to_indices(header: list[str]) -> dict[str, int]:
+    """Mapeia cada campo canônico ao índice da primeira coluna que casa por prefixo.
+
+    Levanta ValueError listando os campos que ficaram sem coluna correspondente.
+    """
+    normalized = [_normalize_header(h) for h in header]
+    mapping: dict[str, int] = {}
+    for field, prefixes in _FIELD_PREFIXES.items():
+        for idx, head in enumerate(normalized):
+            if any(head.startswith(p) for p in prefixes):
+                mapping[field] = idx
+                break
+    missing = [f for f in _FIELD_PREFIXES if f not in mapping]
+    if missing:
+        raise ValueError(
+            f"Master R04 com header inválido — faltam colunas: {missing} (header: {header!r})"
+        )
+    return mapping
 
 
 def parse_master_rows(values: list[list[Any]]) -> list[MasterRow]:
@@ -74,33 +96,29 @@ def parse_master_rows(values: list[list[Any]]) -> list[MasterRow]:
         return []
 
     header = [str(h).strip() for h in values[0]]
-    missing = [h for h in _HEADER_REQUIRED if h not in header]
-    if missing:
-        raise ValueError(f"Master R04 com header inválido — faltam colunas: {missing}")
-
-    idx = {name: header.index(name) for name in header}
+    idx = _map_header_to_indices(header)
     width = len(header)
 
     out: list[MasterRow] = []
     for offset, raw in enumerate(values[1:]):
         padded = list(raw) + [None] * (width - len(raw))
-        item_code = _required(padded[idx["Item"]])
-        pergunta = _required(padded[idx["Definições"]])
+        item_code = _trim(padded[idx["item"]])
+        pergunta = _trim(padded[idx["pergunta"]])
         if not item_code or not pergunta:
             continue
-        disciplina = _required(padded[idx["Disciplina"]])
+        disciplina = _trim(padded[idx["disciplina"]])
         if not disciplina:
             continue
         out.append(
             MasterRow(
                 disciplina=disciplina,
-                tipo=_trim(padded[idx["Tipo"]]),
-                fase=_trim(padded[idx["Fase"]]),
+                tipo=_trim(padded[idx["tipo"]]),
+                fase=_trim(padded[idx["fase"]]),
                 item_code=item_code,
                 pergunta=pergunta,
-                informacao_auxiliar=_trim(padded[idx["Informação auxiliar"]]),
-                apoio_1=_trim(padded[idx["APOIO 1"]]),
-                apoio_2=_trim(padded[idx["APOIO 2"]]),
+                informacao_auxiliar=_trim(padded[idx["informacao_auxiliar"]]),
+                apoio_1=_trim(padded[idx["apoio_1"]]),
+                apoio_2=_trim(padded[idx["apoio_2"]]),
                 source_row=2 + offset,
             )
         )
