@@ -22,7 +22,7 @@ from googleapiclient.errors import HttpError
 
 from oraculo_ai.core.config import get_settings
 from oraculo_ai.document_ai.drive_scanner import build_drive_service_rw
-from oraculo_ai.ingestion.google_sheets.connector import build_sheets_service
+from oraculo_ai.ingestion.google_sheets.connector import build_sheets_service_rw
 from oraculo_ai.projects.repository import (
     get_definitions_for_project,
     get_project_ldp_state,
@@ -367,7 +367,7 @@ def _generate_ldp_sheet_blocking(
     )
 
     drive = build_drive_service_rw()
-    sheets = build_sheets_service(settings.google_service_account_json)
+    sheets = build_sheets_service_rw(settings.google_service_account_json)
 
     _log.info("Resolving DEFINIÇÕES folder under project_folder_id=%s", project_folder_id)
     target_folder_id = resolve_definicoes_folder(drive, project_folder_id)

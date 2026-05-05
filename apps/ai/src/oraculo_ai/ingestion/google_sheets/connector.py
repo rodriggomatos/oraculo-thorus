@@ -9,6 +9,7 @@ from googleapiclient.discovery import Resource, build
 
 
 _SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
+_SCOPES_RW = ["https://www.googleapis.com/auth/spreadsheets"]
 
 
 def load_credentials(creds_input: str, scopes: list[str]) -> Credentials:
@@ -31,6 +32,17 @@ def _load_credentials(creds_input: str) -> Credentials:
 
 def build_sheets_service(creds_input: str) -> Resource:
     creds = _load_credentials(creds_input)
+    return build("sheets", "v4", credentials=creds, cache_discovery=False)
+
+
+def build_sheets_service_rw(creds_input: str) -> Resource:
+    """Variante com escopo de escrita (`spreadsheets`) — pra values.clear/update/batchUpdate.
+
+    Mantida separada do readonly pra deixar explícito quem faz write em
+    planilhas (hoje só o sheet_generator da LDP). Demais callers continuam
+    no readonly.
+    """
+    creds = load_credentials(creds_input, _SCOPES_RW)
     return build("sheets", "v4", credentials=creds, cache_discovery=False)
 
 
