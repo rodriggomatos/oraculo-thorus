@@ -13,11 +13,13 @@ from oraculo_ai.projects import (
 
 @tool
 async def get_project_scope(project_number: int) -> list[dict[str, Any]]:
-    """Retorna ESCOPO CONTRATADO atual do projeto: disciplinas, valores, pesos.
+    """Retorna ESCOPO CONTRATADO atual: disciplinas com flags incluir e legal.
 
-    Use quando user pergunta sobre PREÇO, VALOR, ORÇAMENTO, MARGEM, PONTOS,
-    DISCIPLINAS CONTRATADAS, "o que foi vendido". NÃO confunde com
-    search_definitions (decisões TÉCNICAS de execução).
+    Use quando user pergunta quais DISCIPLINAS foram CONTRATADAS, "o que foi
+    vendido", "quais entregas foram pedidas", se uma disciplina é executivo
+    ou legal. NÃO traz dados financeiros (valor, margem, pontos) — esses ficam
+    em projects.total_contratado/margem ou na planilha de orçamento.
+    NÃO confunde com search_definitions (decisões TÉCNICAS de execução).
 
     Args:
         project_number: Número do projeto (ex: 26002).

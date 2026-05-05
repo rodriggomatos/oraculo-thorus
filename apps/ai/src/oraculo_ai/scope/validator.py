@@ -7,11 +7,9 @@ ERRORS (bloqueiam se user não confirmar via interrupt):
 
 WARNINGS (informa, não bloqueia):
 - DISCIPLINA_FALTANDO: disciplina do template não está na planilha
-- INCLUIR_SEM_PONTOS: incluir=TRUE mas pontos_calculados=0
 """
 
 from collections.abc import Iterable
-from decimal import Decimal
 
 from oraculo_ai.scope.types import (
     VALID_ESTADOS,
@@ -69,20 +67,6 @@ def validate_against_template(
                     ),
                     field="legal",
                     value=row.legal,
-                    row=row.source_row,
-                )
-            )
-
-        if row.incluir and row.pontos_calculados == Decimal("0"):
-            warnings.append(
-                ValidationIssue(
-                    code="INCLUIR_SEM_PONTOS",
-                    severity="warning",
-                    message=(
-                        f"Disciplina {row.disciplina!r} marcada como incluir mas com pontos_calculados=0"
-                    ),
-                    field="pontos_calculados",
-                    value="0",
                     row=row.source_row,
                 )
             )

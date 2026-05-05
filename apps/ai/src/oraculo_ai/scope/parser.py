@@ -8,16 +8,14 @@ Inputs do operador:
   D4 → fluxo (texto)
   G2 → area_m2
 
-Disciplinas (R3:Z46):
+Disciplinas (R3:W46) — só campos que descrevem o escopo do projeto:
   R: disciplina (nome — deve bater com scope_template.nome)
   S: incluir (bool)
-  T: unificar (bool ou null)
-  U: essencial (bool)
-  V: pontos
   W: legal ('executivo' | 'legal')
-  X: peso_disciplina
-  Y: ponto_fixo
-  Z: pontos_calculados
+
+Colunas T/U/V/X/Y/Z (unificar, essencial, pontos, peso, ponto_fixo,
+pontos_calculados) são domínio comercial e ficam apenas na planilha de
+orçamento — não são responsabilidade desse parser.
 
 Agregados:
   G8  → total_contratado
@@ -49,7 +47,7 @@ _INPUT_RANGES: dict[str, str] = {
     "total_contratado": f"{_SHEET_NAME}!G8",
     "margem": f"{_SHEET_NAME}!K16",
 }
-_DISCIPLINAS_RANGE = f"{_SHEET_NAME}!R3:Z46"
+_DISCIPLINAS_RANGE = f"{_SHEET_NAME}!R3:W46"
 
 
 def _normalize_bool(value: Any) -> bool:
@@ -61,12 +59,6 @@ def _normalize_bool(value: Any) -> bool:
     return text in {"true", "verdadeiro", "sim", "x", "1", "yes"}
 
 
-def _normalize_optional_bool(value: Any) -> bool | None:
-    if value is None or value == "":
-        return None
-    return _normalize_bool(value)
-
-
 def _parse_decimal(value: Any) -> Decimal | None:
     if value is None or value == "":
         return None
@@ -75,11 +67,6 @@ def _parse_decimal(value: Any) -> Decimal | None:
         return Decimal(text)
     except (InvalidOperation, ValueError):
         return None
-
-
-def _parse_decimal_required(value: Any, default: Decimal = Decimal("0")) -> Decimal:
-    parsed = _parse_decimal(value)
-    return parsed if parsed is not None else default
 
 
 def _trim(value: Any) -> str | None:
@@ -174,7 +161,7 @@ async def parse_orcamento_from_sheets(spreadsheet_id: str) -> ParsedOrcamento:
 
     disciplinas: list[DisciplinaRow] = []
     for offset, row in enumerate(disciplinas_rows):
-        padded = list(row) + [None] * (9 - len(row))
+        padded = list(row) + [None] * (6 - len(row))
         nome = _trim(padded[0])
         if nome is None:
             continue
@@ -183,13 +170,7 @@ async def parse_orcamento_from_sheets(spreadsheet_id: str) -> ParsedOrcamento:
             DisciplinaRow(
                 disciplina=nome,
                 incluir=_normalize_bool(padded[1]),
-                unificar=_normalize_optional_bool(padded[2]),
-                essencial=_normalize_bool(padded[3]),
-                pontos=_parse_decimal_required(padded[4]),
                 legal=legal_raw,
-                peso_disciplina=_parse_decimal(padded[6]),
-                ponto_fixo=_parse_decimal(padded[7]),
-                pontos_calculados=_parse_decimal_required(padded[8]),
                 source_row=3 + offset,
             )
         )

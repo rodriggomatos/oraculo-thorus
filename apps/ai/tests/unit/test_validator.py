@@ -1,7 +1,5 @@
 """Unit tests pra validate_against_template (errors + warnings)."""
 
-from decimal import Decimal
-
 from oraculo_ai.scope.types import DisciplinaRow, ParsedOrcamento
 from oraculo_ai.scope.validator import validate_against_template
 
@@ -18,19 +16,12 @@ def _make_row(
     *,
     legal: str = "executivo",
     incluir: bool = True,
-    pontos_calculados: Decimal = Decimal("10"),
     source_row: int = 3,
 ) -> DisciplinaRow:
     return DisciplinaRow(
         disciplina=nome,
         incluir=incluir,
-        unificar=None,
-        essencial=False,
-        pontos=Decimal("0"),
         legal=legal,
-        peso_disciplina=None,
-        ponto_fixo=None,
-        pontos_calculados=pontos_calculados,
         source_row=source_row,
     )
 
@@ -96,19 +87,6 @@ def test_disciplina_faltando_vira_warning() -> None:
     result = validate_against_template(parsed, _TEMPLATE)
     codes = [w.code for w in result.warnings]
     assert "DISCIPLINA_FALTANDO" in codes
-
-
-def test_incluir_sem_pontos_vira_warning() -> None:
-    parsed = ParsedOrcamento(
-        spreadsheet_id="abc",
-        estado="SC",
-        disciplinas=[
-            _make_row("SPDA", incluir=True, pontos_calculados=Decimal("0")),
-        ],
-    )
-    result = validate_against_template(parsed, _TEMPLATE)
-    codes = [w.code for w in result.warnings]
-    assert "INCLUIR_SEM_PONTOS" in codes
 
 
 def test_estado_none_passa() -> None:

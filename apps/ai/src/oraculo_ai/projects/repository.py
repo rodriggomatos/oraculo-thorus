@@ -38,13 +38,7 @@ class ProjectScopeRow:
         self.version = int(row["version"])
         self.is_current = bool(row["is_current"])
         self.incluir = bool(row["incluir"])
-        self.unificar = row["unificar"]
-        self.essencial = bool(row["essencial"])
         self.legal = str(row["legal"])
-        self.pontos = row["pontos"]
-        self.peso_disciplina = row["peso_disciplina"]
-        self.ponto_fixo = row["ponto_fixo"]
-        self.pontos_calculados = row["pontos_calculados"]
         self.created_at = row["created_at"]
         self.created_by = row.get("created_by")
         self.superseded_at = row.get("superseded_at")
@@ -59,13 +53,7 @@ class ProjectScopeRow:
             "version": self.version,
             "is_current": self.is_current,
             "incluir": self.incluir,
-            "unificar": self.unificar,
-            "essencial": self.essencial,
             "legal": self.legal,
-            "pontos": float(self.pontos) if self.pontos is not None else None,
-            "peso_disciplina": float(self.peso_disciplina) if self.peso_disciplina is not None else None,
-            "ponto_fixo": float(self.ponto_fixo) if self.ponto_fixo is not None else None,
-            "pontos_calculados": float(self.pontos_calculados) if self.pontos_calculados is not None else None,
         }
 
 
@@ -237,21 +225,18 @@ async def create_project_with_scope(
                         INSERT INTO project_scope (
                             project_id, scope_template_id,
                             version, is_current,
-                            incluir, unificar, essencial, legal,
-                            pontos, peso_disciplina, ponto_fixo, pontos_calculados,
+                            incluir, legal,
                             created_by
                         ) VALUES (
                             %s, %s,
                             1, TRUE,
-                            %s, %s, %s, %s,
-                            %s, %s, %s, %s,
+                            %s, %s,
                             %s
                         )
                         """,
                         (
                             str(project_id), str(template_id),
-                            d.incluir, d.unificar, d.essencial, d.legal,
-                            d.pontos, d.peso_disciplina, d.ponto_fixo, d.pontos_calculados,
+                            d.incluir, d.legal,
                             str(created_by),
                         ),
                     )
@@ -310,22 +295,19 @@ async def upload_new_scope_version(
                         INSERT INTO project_scope (
                             project_id, scope_template_id,
                             version, is_current,
-                            incluir, unificar, essencial, legal,
-                            pontos, peso_disciplina, ponto_fixo, pontos_calculados,
+                            incluir, legal,
                             created_by
                         ) VALUES (
                             %s, %s,
                             %s, TRUE,
-                            %s, %s, %s, %s,
-                            %s, %s, %s, %s,
+                            %s, %s,
                             %s
                         )
                         """,
                         (
                             str(project_id), str(template_id),
                             next_version,
-                            d.incluir, d.unificar, d.essencial, d.legal,
-                            d.pontos, d.peso_disciplina, d.ponto_fixo, d.pontos_calculados,
+                            d.incluir, d.legal,
                             str(created_by),
                         ),
                     )
