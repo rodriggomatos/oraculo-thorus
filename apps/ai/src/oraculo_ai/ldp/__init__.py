@@ -7,7 +7,6 @@ from oraculo_ai.ldp.master_reader import (
 )
 from oraculo_ai.ldp.seed import filter_master_for_active
 
-
 __all__ = [
     "MasterRow",
     "filter_master_for_active",

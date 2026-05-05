@@ -5,9 +5,12 @@ from pathlib import Path
 
 import pytest
 
-from oraculo_ai.ldp.master_reader import parse_master_rows
+from oraculo_ai.ldp.master_reader import (
+    _REQUIRED_FIELDS,
+    _load_schema,
+    parse_master_rows,
+)
 from oraculo_ai.ldp.seed import filter_master_for_active
-
 
 _FIXTURE_PATH = Path(__file__).resolve().parents[1] / "fixtures" / "master_r04.json"
 
@@ -175,3 +178,94 @@ def test_parse_master_reports_missing_field_in_error():
                 ],
             ]
         )
+
+
+def test_yaml_schema_loads_and_covers_required_fields():
+    schema = _load_schema()
+    for field in _REQUIRED_FIELDS:
+        assert field in schema, f"campo obrigatório {field!r} ausente do YAML"
+        spec = schema[field]
+        assert spec.canonical, f"{field!r} sem canonical"
+        assert spec.aliases, f"{field!r} sem aliases"
+
+
+def test_yaml_schema_has_all_thirteen_documented_fields():
+    schema = _load_schema()
+    expected = {
+        "disciplina",
+        "tipo",
+        "fase",
+        "item_code",
+        "pergunta",
+        "status",
+        "custo",
+        "opcao_escolhida",
+        "observacoes",
+        "validado",
+        "informacao_auxiliar",
+        "apoio_1",
+        "apoio_2",
+    }
+    assert expected.issubset(set(schema.keys()))
+
+
+def test_error_message_lists_aliases_canonical_and_headers_present():
+    bad_header = [["Disciplina", "Tipo", "Fase", "Item", "Definições", "Informação auxiliar"]]
+    with pytest.raises(ValueError) as excinfo:
+        parse_master_rows(bad_header)
+    msg = str(excinfo.value)
+    assert "Headers presentes" in msg
+    assert "Aliases aceitos" in msg
+    assert "'APOIO 1'" in msg  # canonical reportado
+    assert "'apoio_1'" in msg  # alias listado
+    assert "'APOIO 2'" in msg
+    assert "'Disciplina'" in msg  # header presente repassado pra debug
+
+
+def test_load_schema_with_custom_path(tmp_path):
+    custom = tmp_path / "schema.yaml"
+    custom.write_text(
+        """
+version: 1
+fields:
+  disciplina:
+    canonical: "Disciplina"
+    aliases: ["disciplina"]
+  tipo:
+    canonical: "Tipo"
+    aliases: ["tipo"]
+  fase:
+    canonical: "Fase"
+    aliases: ["fase"]
+  item_code:
+    canonical: "Item"
+    aliases: ["item"]
+  pergunta:
+    canonical: "Definições"
+    aliases: ["definições"]
+  informacao_auxiliar:
+    canonical: "Informação auxiliar"
+    aliases: ["info aux", "informação auxiliar"]
+  apoio_1:
+    canonical: "APOIO 1"
+    aliases: ["apoio 1"]
+  apoio_2:
+    canonical: "APOIO 2"
+    aliases: ["apoio 2"]
+""",
+        encoding="utf-8",
+    )
+    schema = _load_schema(str(custom))
+    assert "info aux" in schema["informacao_auxiliar"].aliases
+
+
+def test_malformed_yaml_raises_descriptive_error(tmp_path):
+    bad = tmp_path / "broken.yaml"
+    bad.write_text("fields:\n  disciplina: [unbalanced", encoding="utf-8")
+    with pytest.raises(ValueError, match="YAML inválido"):
+        _load_schema(str(bad))
+
+
+def test_missing_yaml_file_raises_with_path(tmp_path):
+    with pytest.raises(FileNotFoundError, match="não encontrado em"):
+        _load_schema(str(tmp_path / "nope.yaml"))

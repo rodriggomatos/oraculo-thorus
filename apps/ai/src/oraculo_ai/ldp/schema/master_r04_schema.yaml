@@ -1,0 +1,99 @@
+# Schema da Master R04 (Lista de Definições — template oficial Thórus).
+#
+# Cada chave em `fields` é um nome canônico (snake_case) usado pelo parser e
+# pelo INSERT em `definitions`. `canonical` é o rótulo "oficial" usado quando
+# o erro precisa apontar a coluna pra um humano. `aliases` é a lista (também
+# canonicalizada como case-insensitive) de prefixos aceitos pra match com os
+# headers reais da planilha — útil quando alguém edita a master e adiciona
+# texto extra ao header (ex.: "Informação auxiliar para tomada de decisão
+# (EX: …)").
+#
+# Match é por PREFIXO: o header normalizado (lower + strip) precisa começar
+# com algum dos aliases. Garante tolerância a sufixos descritivos sem permitir
+# que "tipologia" seja confundido com "tipo" (ordem dos aliases não importa,
+# todos são testados).
+#
+# Pra adicionar variação nova, basta um item em `aliases`. Mexer no `canonical`
+# só quando a Master oficial mudar de nome (raro).
+
+version: 1
+description: Schema de aliases para o parser da Master R04 da LDP.
+
+fields:
+  disciplina:
+    canonical: "Disciplina"
+    aliases:
+      - "disciplina"
+
+  tipo:
+    canonical: "Tipo"
+    aliases:
+      - "tipo"
+
+  fase:
+    canonical: "Fase"
+    aliases:
+      - "fase"
+
+  item_code:
+    canonical: "Item"
+    aliases:
+      - "item"
+      - "código"
+      - "codigo"
+
+  pergunta:
+    canonical: "Definições"
+    aliases:
+      - "definições"
+      - "definicoes"
+      - "pergunta"
+
+  status:
+    canonical: "Status"
+    aliases:
+      - "status"
+
+  custo:
+    canonical: "Custo"
+    aliases:
+      - "custo"
+
+  opcao_escolhida:
+    canonical: "Opção escolhida"
+    aliases:
+      - "opção escolhida"
+      - "opcao escolhida"
+
+  observacoes:
+    canonical: "Observações"
+    aliases:
+      - "observações"
+      - "observacoes"
+      - "obs"
+
+  validado:
+    canonical: "Validado"
+    aliases:
+      - "validado"
+
+  informacao_auxiliar:
+    canonical: "Informação auxiliar para tomada de decisão (EX: exemplo)"
+    aliases:
+      - "informação auxiliar"
+      - "informacao auxiliar"
+      - "info auxiliar"
+
+  apoio_1:
+    canonical: "APOIO 1"
+    aliases:
+      - "apoio 1"
+      - "apoio_1"
+      - "apoio1"
+
+  apoio_2:
+    canonical: "APOIO 2"
+    aliases:
+      - "apoio 2"
+      - "apoio_2"
+      - "apoio2"
