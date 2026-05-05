@@ -330,21 +330,32 @@ async def create_ldp_sheet_endpoint(
             detail="Planilha LDP já existe para este projeto.",
         )
 
+    _log.info("LDP sheet generation start for project %s", project_id)
     try:
         result = await generate_ldp_sheet(project_id)
     except LdpSheetAlreadyExistsError as exc:
         # Race rara: outro request criou entre o pre-check e o generate.
+        _log.warning(
+            "LDP sheet already exists for project %s (race with another request)",
+            project_id,
+        )
         raise HTTPException(
             status_code=409, detail="Planilha LDP já existe para este projeto."
         ) from exc
     except DriveFolderStructureError as exc:
+        _log.exception("LDP sheet drive folder structure check failed for project %s", project_id)
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     except MasterNotAccessibleError as exc:
+        _log.exception("LDP sheet master access failed for project %s", project_id)
         raise HTTPException(status_code=502, detail=str(exc)) from exc
     except DefinicoesParentNotEditableError as exc:
+        _log.exception(
+            "LDP sheet target folder not editable for project %s", project_id
+        )
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except ValueError as exc:
         # Defensivo: definitions vazias.
+        _log.exception("LDP sheet pre-check failed for project %s", project_id)
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     except LdpSheetGenerationError as exc:
         _log.exception("LDP sheet generation failed for project %s", project_id)
@@ -362,6 +373,13 @@ async def create_ldp_sheet_endpoint(
                 "Erro de comunicação com Google Sheets. Tente novamente em alguns segundos."
             ),
         ) from exc
+
+    _log.info(
+        "LDP sheet generation success for project %s (sheets_id=%s, rows=%d)",
+        project_id,
+        result.sheets_id,
+        result.rows_written,
+    )
 
     return CreateLdpSheetResponse(
         sheets_id=result.sheets_id,
