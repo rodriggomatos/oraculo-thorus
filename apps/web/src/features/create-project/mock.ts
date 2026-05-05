@@ -1,6 +1,7 @@
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import type {
   CreateDriveFolderResponse,
+  CreateLdpSheetResponse,
   CreateProjectRequest,
   CreateProjectResponse,
   SuggestNumberResponse,
@@ -92,4 +93,20 @@ export async function createDriveFolder(
     );
   }
   return (await response.json()) as CreateDriveFolderResponse;
+}
+
+
+export async function createLdpSheet(
+  projectId: string,
+): Promise<CreateLdpSheetResponse> {
+  const response = await fetch(`${API_BASE}/${encodeURIComponent(projectId)}/create-ldp-sheet`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+  });
+  if (!response.ok) {
+    throw new Error(
+      await extractErrorMessage(response, "Falha ao criar planilha LDP"),
+    );
+  }
+  return (await response.json()) as CreateLdpSheetResponse;
 }

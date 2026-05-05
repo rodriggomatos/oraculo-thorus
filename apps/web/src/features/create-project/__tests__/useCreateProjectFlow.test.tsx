@@ -86,6 +86,7 @@ describe("useCreateProjectFlow.start", () => {
       projectName: "26024 - Acme - Torre A",
       driveFolderPending: true,
       driveFolderId: null,
+      ldpSheetsId: null,
       definitionsCount: 0,
     });
 

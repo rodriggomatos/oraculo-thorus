@@ -43,6 +43,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     project_name?: string;
     drive_folder_pending: boolean;
     drive_folder_id?: string | null;
+    ldp_sheets_id?: string | null;
     definitions_count?: number;
   };
 
@@ -52,6 +53,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     projectName: data.project_name ?? "",
     driveFolderPending: data.drive_folder_pending,
     driveFolderId: data.drive_folder_id ?? null,
+    ldpSheetsId: data.ldp_sheets_id ?? null,
     definitionsCount: data.definitions_count ?? 0,
   };
 

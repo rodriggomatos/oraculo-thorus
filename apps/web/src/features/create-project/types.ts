@@ -61,6 +61,7 @@ export interface CreateProjectResponse {
   projectName: string;
   driveFolderPending: boolean;
   driveFolderId: string | null;
+  ldpSheetsId: string | null;
   definitionsCount: number;
 }
 
@@ -69,6 +70,14 @@ export interface CreateDriveFolderResponse {
   folderId: string;
   folderUrl: string;
   folderName: string;
+}
+
+
+export interface CreateLdpSheetResponse {
+  sheetsId: string;
+  sheetsUrl: string;
+  sheetsName: string;
+  rowsWritten: number;
 }
 
 

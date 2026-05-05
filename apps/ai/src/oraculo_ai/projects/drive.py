@@ -15,7 +15,6 @@ from googleapiclient.discovery import Resource
 from oraculo_ai.core.config import get_settings
 from oraculo_ai.document_ai.drive_scanner import build_drive_service
 
-
 _log = logging.getLogger(__name__)
 
 

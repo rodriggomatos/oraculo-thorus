@@ -12,15 +12,23 @@ from oraculo_ai.drive import (
     DriveFolderAlreadyExistsError,
     DriveTemplateNotAccessibleError,
     copy_project_template,
-    folder_url_for,
 )
-from oraculo_ai.ldp import read_master_r04
+from oraculo_ai.ldp import (
+    DefinicoesParentNotEditableError,
+    DriveFolderStructureError,
+    LdpSheetAlreadyExistsError,
+    LdpSheetGenerationError,
+    MasterNotAccessibleError,
+    generate_ldp_sheet,
+    read_master_r04,
+)
 from oraculo_ai.permissions import check_permission
 from oraculo_ai.projects import (
     create_project_with_scope,
     format_project_name,
     get_next_project_number,
     get_project_drive_state,
+    get_project_ldp_state,
     update_drive_folder_path,
 )
 from oraculo_ai.scope import parse_orcamento_from_sheets, validate_against_template
@@ -83,6 +91,7 @@ class CreateProjectResponse(BaseModel):
     project_name: str
     drive_folder_pending: bool = True
     drive_folder_id: str | None = None
+    ldp_sheets_id: str | None = None
     scope_inserted: int = 0
     scope_skipped: list[str] = []
     already_existed: bool = False
@@ -94,6 +103,13 @@ class CreateDriveFolderResponse(BaseModel):
     folder_id: str
     folder_url: str
     folder_name: str
+
+
+class CreateLdpSheetResponse(BaseModel):
+    sheets_id: str
+    sheets_url: str
+    sheets_name: str
+    rows_written: int
 
 
 @router.post("/projects/suggest-number", response_model=SuggestNumberResponse)
@@ -172,8 +188,9 @@ async def create_project_endpoint(
         master_rows=master_rows,
     )
 
-    drive_state = await get_project_drive_state(UUID(str(result["project_id"])))
-    drive_folder_id = drive_state["drive_folder_path"] if drive_state else None
+    ldp_state = await get_project_ldp_state(UUID(str(result["project_id"])))
+    drive_folder_id = ldp_state["drive_folder_path"] if ldp_state else None
+    ldp_sheets_id = ldp_state["ldp_sheets_id"] if ldp_state else None
 
     return CreateProjectResponse(
         project_id=str(result["project_id"]),
@@ -181,6 +198,7 @@ async def create_project_endpoint(
         project_name=name,
         drive_folder_pending=drive_folder_id is None,
         drive_folder_id=drive_folder_id,
+        ldp_sheets_id=ldp_sheets_id,
         scope_inserted=int(result.get("scope_inserted", 0)),
         scope_skipped=list(result.get("scope_skipped", [])),
         already_existed=not bool(result.get("created", True)),
@@ -272,4 +290,82 @@ async def create_drive_folder_endpoint(
         folder_id=result.folder_id,
         folder_url=result.folder_url,
         folder_name=result.folder_name,
+    )
+
+
+@router.post(
+    "/projects/{project_id}/create-ldp-sheet",
+    response_model=CreateLdpSheetResponse,
+)
+async def create_ldp_sheet_endpoint(
+    project_id: UUID,
+    user: UserContext = Depends(get_current_user),
+) -> CreateLdpSheetResponse:
+    if not check_permission(user, "create_project"):
+        raise HTTPException(
+            status_code=403,
+            detail="Sem permissão para criar planilha LDP.",
+        )
+
+    state = await get_project_ldp_state(project_id)
+    if state is None:
+        raise HTTPException(status_code=404, detail="Projeto não encontrado.")
+
+    is_admin = user.role == "admin"
+    if not is_admin and str(state["created_by"]) != str(user.user_id):
+        raise HTTPException(
+            status_code=403,
+            detail="Sem permissão para criar planilha LDP deste projeto.",
+        )
+
+    if not state["drive_folder_path"]:
+        raise HTTPException(
+            status_code=409,
+            detail="Crie a pasta no Drive primeiro.",
+        )
+
+    if state["ldp_sheets_id"]:
+        raise HTTPException(
+            status_code=409,
+            detail="Planilha LDP já existe para este projeto.",
+        )
+
+    try:
+        result = await generate_ldp_sheet(project_id)
+    except LdpSheetAlreadyExistsError as exc:
+        # Race rara: outro request criou entre o pre-check e o generate.
+        raise HTTPException(
+            status_code=409, detail="Planilha LDP já existe para este projeto."
+        ) from exc
+    except DriveFolderStructureError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except MasterNotAccessibleError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except DefinicoesParentNotEditableError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        # Defensivo: definitions vazias.
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except LdpSheetGenerationError as exc:
+        _log.exception("LDP sheet generation failed for project %s", project_id)
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "Erro de comunicação com Google Sheets. Tente novamente em alguns segundos."
+            ),
+        ) from exc
+    except Exception as exc:
+        _log.exception("LDP sheet unexpected failure for project %s", project_id)
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "Erro de comunicação com Google Sheets. Tente novamente em alguns segundos."
+            ),
+        ) from exc
+
+    return CreateLdpSheetResponse(
+        sheets_id=result.sheets_id,
+        sheets_url=result.sheets_url,
+        sheets_name=result.sheets_name,
+        rows_written=result.rows_written,
     )

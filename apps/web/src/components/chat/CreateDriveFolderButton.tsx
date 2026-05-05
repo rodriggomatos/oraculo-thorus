@@ -9,6 +9,7 @@ import { createDriveFolder } from "@/features/create-project/mock";
 export type CreateDriveFolderButtonProps = {
   projectId: string;
   initialFolderId?: string | null;
+  onCreated?: (folderId: string) => void;
 };
 
 
@@ -23,6 +24,7 @@ function driveUrlFor(folderId: string): string {
 export function CreateDriveFolderButton({
   projectId,
   initialFolderId = null,
+  onCreated,
 }: CreateDriveFolderButtonProps): React.ReactElement {
   const [status, setStatus] = useState<Status>(initialFolderId ? "success" : "idle");
   const [folderId, setFolderId] = useState<string | null>(initialFolderId);
@@ -40,6 +42,7 @@ export function CreateDriveFolderButton({
       setFolderId(result.folderId);
       setFolderUrl(result.folderUrl);
       setStatus("success");
+      onCreated?.(result.folderId);
     } catch (e) {
       setErrorMessage(e instanceof Error ? e.message : "Falha desconhecida");
       setStatus("error");

@@ -166,6 +166,85 @@ async def update_drive_folder_path(project_id: UUID, folder_id: str) -> bool:
             return cur.rowcount > 0
 
 
+async def get_project_ldp_state(project_id: UUID) -> dict[str, Any] | None:
+    """Estado pra geração da planilha LDP: pasta do Drive, ldp_sheets_id, metadata."""
+    pool = get_pool()
+    async with pool.connection() as conn:
+        async with conn.cursor(row_factory=dict_row) as cur:
+            await cur.execute(
+                """
+                SELECT project_number, name, empreendimento, cidade, estado,
+                       drive_folder_path, ldp_sheets_id, created_by
+                FROM projects
+                WHERE id = %s
+                """,
+                (str(project_id),),
+            )
+            row = await cur.fetchone()
+    if row is None:
+        return None
+    return {
+        "project_number": int(row["project_number"]),
+        "name": str(row["name"]),
+        "empreendimento": (
+            str(row["empreendimento"]) if row["empreendimento"] else None
+        ),
+        "cidade": str(row["cidade"]) if row["cidade"] else None,
+        "estado": str(row["estado"]) if row["estado"] else None,
+        "drive_folder_path": (
+            str(row["drive_folder_path"]) if row["drive_folder_path"] else None
+        ),
+        "ldp_sheets_id": str(row["ldp_sheets_id"]) if row["ldp_sheets_id"] else None,
+        "created_by": row["created_by"],
+    }
+
+
+async def update_ldp_sheets_id(project_id: UUID, sheets_id: str) -> bool:
+    pool = get_pool()
+    async with pool.connection() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute(
+                """
+                UPDATE projects
+                   SET ldp_sheets_id = %s,
+                       updated_at = NOW()
+                 WHERE id = %s
+                """,
+                (sheets_id, str(project_id)),
+            )
+            return cur.rowcount > 0
+
+
+async def get_definitions_for_project(project_id: UUID) -> list[dict[str, Any]]:
+    """Versão vigente de cada `item_code` do projeto, ordenada como na master.
+
+    Pega a linha mais recente por (project_id, item_code) — assim respostas
+    registradas via chat (após a semeadura inicial) vão pra planilha.
+    """
+    pool = get_pool()
+    async with pool.connection() as conn:
+        async with conn.cursor(row_factory=dict_row) as cur:
+            await cur.execute(
+                """
+                WITH latest AS (
+                    SELECT DISTINCT ON (item_code)
+                           disciplina, tipo, fase, item_code, pergunta,
+                           status, custo, opcao_escolhida, observacoes,
+                           validado, informacao_auxiliar, apoio_1, apoio_2,
+                           source_row
+                    FROM definitions
+                    WHERE project_id = %s
+                    ORDER BY item_code, created_at DESC
+                )
+                SELECT * FROM latest
+                ORDER BY disciplina NULLS LAST, source_row NULLS LAST
+                """,
+                (str(project_id),),
+            )
+            rows = await cur.fetchall()
+    return [dict(r) for r in rows]
+
+
 async def _scope_template_id_by_name(conn: Any, nome: str) -> UUID | None:
     async with conn.cursor(row_factory=dict_row) as cur:
         await cur.execute(

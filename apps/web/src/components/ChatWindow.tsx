@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FolderOpen, ListTodo, Search } from "lucide-react";
 import { InputArea } from "./chat/InputArea";
 import { CreateDriveFolderButton } from "./chat/CreateDriveFolderButton";
+import { CreateLdpSheetButton } from "./chat/CreateLdpSheetButton";
 import { FlowDecisionBar } from "./chat/FlowDecisionBar";
 import { NumberConfirmBar } from "./chat/NumberConfirmBar";
 import { Message as MessageComponent } from "./Message";
@@ -70,6 +71,15 @@ export function ChatWindow({
   useEffect(() => {
     flowReset();
   }, [threadId, flowReset]);
+
+  const projectId = flow.state.finalResult?.projectId ?? null;
+  const initialDriveFolderId = flow.state.finalResult?.driveFolderId ?? null;
+  const [driveFolderId, setDriveFolderId] = useState<string | null>(
+    initialDriveFolderId,
+  );
+  useEffect(() => {
+    setDriveFolderId(initialDriveFolderId);
+  }, [projectId, initialDriveFolderId]);
 
   useEffect(() => {
     if (!scrollRef.current) return;
@@ -200,11 +210,24 @@ export function ChatWindow({
                 </div>
               ) : null}
               {showDriveFolderButton && flow.state.finalResult ? (
-                <div className="flex justify-start">
+                <div className="flex flex-col gap-2 items-start">
                   <div className="px-1">
                     <CreateDriveFolderButton
                       projectId={flow.state.finalResult.projectId}
                       initialFolderId={flow.state.finalResult.driveFolderId}
+                      onCreated={(id) => setDriveFolderId(id)}
+                    />
+                  </div>
+                  <div className="px-1">
+                    <CreateLdpSheetButton
+                      projectId={flow.state.finalResult.projectId}
+                      initialSheetsId={flow.state.finalResult.ldpSheetsId}
+                      disabled={!driveFolderId}
+                      disabledReason={
+                        !driveFolderId
+                          ? "Crie a pasta no Drive primeiro."
+                          : undefined
+                      }
                     />
                   </div>
                 </div>
