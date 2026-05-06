@@ -18,7 +18,7 @@ export default function LoginPage(): React.ReactElement {
         options: {
           redirectTo: `${origin}/auth/callback`,
           queryParams: {
-            hd: "thorus.com.br",
+            hd: "thorusengenharia.com.br",
             access_type: "offline",
             prompt: "consent",
           },
@@ -76,7 +76,7 @@ export default function LoginPage(): React.ReactElement {
         ) : null}
 
         <p className="text-center text-xs text-white/40">
-          Apenas e-mails @thorus.com.br têm acesso.
+          Apenas e-mails @thorusengenharia.com.br têm acesso.
         </p>
       </div>
     </div>

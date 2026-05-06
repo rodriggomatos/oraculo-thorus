@@ -12,7 +12,7 @@ export default async function AuthErrorPage({
 
   const friendly =
     reason === "domain"
-      ? "Apenas e-mails @thorus.com.br podem acessar o Oráculo."
+      ? "Apenas e-mails @thorusengenharia.com.br podem acessar o Oráculo."
       : message;
 
   return (
