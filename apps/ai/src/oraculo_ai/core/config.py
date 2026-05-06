@@ -56,7 +56,7 @@ class Settings(BaseSettings):
 
     document_ai_incoming_dir: str = "C:/oraculo-thorus/incoming"
 
-    allowed_email_domain: str = "thorus.com.br"
+    allowed_email_domain: str = "thorusengenharia.com.br"
     supabase_jwt_secret: str = ""
     supabase_jwks_url: str = ""
 
