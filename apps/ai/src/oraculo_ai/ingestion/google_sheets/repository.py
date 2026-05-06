@@ -52,7 +52,7 @@ class SheetsRepository:
         async with self._ensured_pool.connection() as conn:
             async with conn.cursor(row_factory=dict_row) as cur:
                 await cur.execute(
-                    "SELECT id, project_number, name, google_sheet_id "
+                    "SELECT id, project_number, name, ldp_sheets_id "
                     "FROM projects WHERE project_number = %s",
                     (project_number,),
                 )

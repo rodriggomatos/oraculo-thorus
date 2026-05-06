@@ -49,7 +49,7 @@ def main() -> None:
         "--project-number",
         type=int,
         required=True,
-        help="Número do projeto (ex.: 26002). Deve existir na tabela projects com google_sheet_id setado.",
+        help="Número do projeto (ex.: 26002). Deve existir na tabela projects com ldp_sheets_id setado.",
     )
     parser.add_argument(
         "--sheet-name",

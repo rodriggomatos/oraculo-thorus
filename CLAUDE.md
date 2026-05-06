@@ -117,7 +117,7 @@ CREATE TABLE projects (
   project_number integer UNIQUE NOT NULL,
   name text NOT NULL,
   client text,
-  google_sheet_id text,
+  ldp_sheets_id text,
   status text DEFAULT 'active',
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()

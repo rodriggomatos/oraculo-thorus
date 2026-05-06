@@ -24,7 +24,7 @@ class ProjectConfig(BaseModel):
     project_number: int
     name: str
     client: str
-    google_sheet_id: str
+    ldp_sheets_id: str
 
 
 class BatchConfig(BaseModel):
@@ -46,7 +46,7 @@ async def _run_one(project: ProjectConfig, writer: ProjectsWriter) -> IngestionS
         project_number=project.project_number,
         name=project.name,
         client=project.client,
-        google_sheet_id=project.google_sheet_id,
+        ldp_sheets_id=project.ldp_sheets_id,
     )
     print("✅ Inserido em projects (ou atualizado)")
     print("📥 Ingerindo planilha...")

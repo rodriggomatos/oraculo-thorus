@@ -5,8 +5,8 @@ projects:
   - project_number: 26015
     name: "Marina - Av. Beira Mar"
     client: "Construtora Marina"
-    google_sheet_id: "EXEMPLO_SHEET_ID_AQUI"
+    ldp_sheets_id: "EXEMPLO_SHEET_ID_AQUI"
   - project_number: 27001
     name: "Jardim Botânico"
     client: "Família Souza"
-    google_sheet_id: "OUTRO_EXEMPLO"
+    ldp_sheets_id: "OUTRO_EXEMPLO"

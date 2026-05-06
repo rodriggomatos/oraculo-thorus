@@ -43,22 +43,22 @@ class ProjectsWriter:
         project_number: int,
         name: str,
         client: str,
-        google_sheet_id: str,
+        ldp_sheets_id: str,
     ) -> UUID:
         async with self._ensured_pool.connection() as conn:
             async with conn.cursor(row_factory=dict_row) as cur:
                 await cur.execute(
                     """
-                    INSERT INTO projects (project_number, name, client, google_sheet_id, status)
+                    INSERT INTO projects (project_number, name, client, ldp_sheets_id, status)
                     VALUES (%s, %s, %s, %s, 'active')
                     ON CONFLICT (project_number) DO UPDATE SET
                         name = EXCLUDED.name,
                         client = EXCLUDED.client,
-                        google_sheet_id = EXCLUDED.google_sheet_id,
+                        ldp_sheets_id = EXCLUDED.ldp_sheets_id,
                         updated_at = now()
                     RETURNING id
                     """,
-                    (project_number, name, client, google_sheet_id),
+                    (project_number, name, client, ldp_sheets_id),
                 )
                 row = await cur.fetchone()
                 if row is None:

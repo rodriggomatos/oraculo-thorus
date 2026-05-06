@@ -75,7 +75,7 @@ async def _run(project_folder_id: str) -> int:
             project_number=project_number,
             name=full_name,
             client=client,
-            google_sheet_id=sheet_id,
+            ldp_sheets_id=sheet_id,
         )
 
         if project_info["created"]:

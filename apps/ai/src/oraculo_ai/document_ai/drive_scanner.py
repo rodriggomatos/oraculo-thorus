@@ -288,7 +288,7 @@ async def get_or_create_project(
     project_number: int,
     name: str,
     client: str,
-    google_sheet_id: str,
+    ldp_sheets_id: str,
 ) -> dict[str, Any]:
     """Garante que o projeto existe na tabela `projects` (chave: project_number).
 
@@ -314,11 +314,11 @@ async def get_or_create_project(
 
             await cur.execute(
                 """
-                INSERT INTO projects (project_number, name, client, google_sheet_id, status)
+                INSERT INTO projects (project_number, name, client, ldp_sheets_id, status)
                 VALUES (%s, %s, %s, %s, 'active')
                 RETURNING id, project_number
                 """,
-                (project_number, name, client, google_sheet_id),
+                (project_number, name, client, ldp_sheets_id),
             )
             row = await cur.fetchone()
             if row is None:

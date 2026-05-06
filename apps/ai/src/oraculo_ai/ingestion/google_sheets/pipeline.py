@@ -39,10 +39,10 @@ async def run_ingestion(
             raise RuntimeError(
                 f"project number {project_number} not found in `projects` table"
             )
-        spreadsheet_id = project.get("google_sheet_id")
+        spreadsheet_id = project.get("ldp_sheets_id")
         if not spreadsheet_id:
             raise RuntimeError(
-                f"project {project_number} has no google_sheet_id set"
+                f"project {project_number} has no ldp_sheets_id set"
             )
 
         project_id: UUID = project["id"]
