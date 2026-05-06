@@ -1,5 +1,7 @@
 """Auth: valida JWT do Supabase, carrega user_profile, expõe Depends(get_current_user)."""
 
+import logging
+import time
 from typing import Any
 from uuid import UUID
 
@@ -13,7 +15,10 @@ from oraculo_ai.core.config import Settings, get_settings
 from oraculo_ai.core.db import get_pool
 
 
-_JWKS_CACHE: dict[str, Any] = {}
+_log = logging.getLogger(__name__)
+
+_JWKS_TTL_SECONDS = 15 * 60
+_JWKS_CACHE: dict[str, tuple[dict[str, Any], float]] = {}
 
 
 class UserContext(BaseModel):
@@ -24,14 +29,30 @@ class UserContext(BaseModel):
     is_active: bool
 
 
+def _get_cached_jwks(url: str) -> dict[str, Any] | None:
+    entry = _JWKS_CACHE.get(url)
+    if entry is None:
+        return None
+    jwks, expires_at = entry
+    if time.monotonic() >= expires_at:
+        return None
+    return jwks
+
+
+def _set_cached_jwks(url: str, jwks: dict[str, Any]) -> None:
+    _JWKS_CACHE[url] = (jwks, time.monotonic() + _JWKS_TTL_SECONDS)
+
+
 async def _fetch_jwks(url: str) -> dict[str, Any]:
-    if url in _JWKS_CACHE:
-        return _JWKS_CACHE[url]
+    cached = _get_cached_jwks(url)
+    if cached is not None:
+        return cached
+    _log.info("jwks: fetching from %s", url)
     async with httpx.AsyncClient(timeout=10.0) as client:
         response = await client.get(url)
         response.raise_for_status()
         payload: dict[str, Any] = response.json()
-    _JWKS_CACHE[url] = payload
+    _set_cached_jwks(url, payload)
     return payload
 
 
