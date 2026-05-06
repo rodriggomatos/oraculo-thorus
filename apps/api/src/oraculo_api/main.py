@@ -3,17 +3,23 @@
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-from psycopg.rows import dict_row
-from psycopg_pool import AsyncConnectionPool
-
 from oraculo_ai.core.config import get_settings
-from oraculo_ai.core.db import close_db, init_db
-from oraculo_ai.llm.client import shutdown_traces
 
-from oraculo_api.routes import auth, documents, health, projects, query
+from oraculo_api.logging_config import configure_logging
+
+_settings = get_settings()
+configure_logging(_settings)
+
+from fastapi import FastAPI  # noqa: E402
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver  # noqa: E402
+from psycopg.rows import dict_row  # noqa: E402
+from psycopg_pool import AsyncConnectionPool  # noqa: E402
+
+from oraculo_ai.core.db import close_db, init_db  # noqa: E402
+from oraculo_ai.llm.client import shutdown_traces  # noqa: E402
+
+from oraculo_api.routes import auth, documents, health, projects, query  # noqa: E402
 
 
 @asynccontextmanager
@@ -46,8 +52,6 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
-
-_settings = get_settings()
 
 app.add_middleware(
     CORSMiddleware,
