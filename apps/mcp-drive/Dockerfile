@@ -44,4 +44,4 @@ USER appuser
 
 EXPOSE 8001
 
-CMD ["python", "-m", "mcp_drive"]
+CMD ["sh", "-c", "MCP_DRIVE_PORT=${PORT:-8001} python -m mcp_drive"]
