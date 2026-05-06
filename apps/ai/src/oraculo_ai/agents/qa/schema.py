@@ -10,6 +10,12 @@ class UserContext(BaseModel):
     email: str
     name: str
     role: str = "engineer"
+    # Permissões extras carregadas de user_profiles.permissions. Default
+    # vazio pra que o caller possa omitir e check_permission funcione sem
+    # AttributeError em paths non-admin.
+    # TODO sprint futura: carregar permissions reais ao construir o
+    # AgentUserContext em apps/api/src/oraculo_api/routes/query.py.
+    permissions: list[str] = Field(default_factory=list)
 
 
 class QAQuery(BaseModel):

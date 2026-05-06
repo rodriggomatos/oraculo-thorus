@@ -13,6 +13,7 @@ from oraculo_ai.agents.qa.tools.qa_search import (
     register_definition,
     search_definitions,
 )
+from oraculo_ai.agents.qa.tools.query_database import query_database
 
 
 __all__ = [
@@ -23,6 +24,7 @@ __all__ = [
     "list_projects",
     "make_create_project",
     "make_register_definition",
+    "query_database",
     "register_definition",
     "search_definitions",
 ]
