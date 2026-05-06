@@ -33,7 +33,11 @@ def build_server() -> FastMCP:
     resolver = ProjectResolver(backend, settings.thorus_drive_root_id, cache=folder_cache)
     tools = DriveTools(backend=backend, resolver=resolver)
 
-    mcp = FastMCP("thorus-drive")
+    mcp = FastMCP(
+        "thorus-drive",
+        host=settings.mcp_drive_host,
+        port=settings.mcp_drive_port,
+    )
 
     _register_tools(mcp, tools)
     _log.info(
