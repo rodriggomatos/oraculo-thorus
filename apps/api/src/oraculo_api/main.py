@@ -26,11 +26,15 @@ from oraculo_api.routes import auth, documents, health, projects, query  # noqa:
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
 
-    await init_db(settings.database_url, pool_size=5)
+    await init_db(
+        settings.database_url,
+        pool_size=settings.db_pool_max_size,
+        min_size=settings.db_pool_min_size,
+    )
 
     async with AsyncConnectionPool(
         conninfo=settings.database_url,
-        max_size=20,
+        max_size=settings.db_pool_max_size,
         kwargs={
             "autocommit": True,
             "prepare_threshold": 0,
