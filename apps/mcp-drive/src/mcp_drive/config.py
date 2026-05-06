@@ -2,6 +2,7 @@
 
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -21,6 +22,11 @@ class Settings(BaseSettings):
     thorus_drive_root_id: str = "0AGS3i6FJiluJUk9PVA"
     mcp_drive_cache_ttl_seconds: int = 300
     mcp_drive_log_level: str = "INFO"
+
+    mcp_drive_transport: Literal["stdio", "streamable-http", "sse"] = "stdio"
+    mcp_drive_host: str = "127.0.0.1"
+    mcp_drive_port: int = 8001
+    mcp_drive_auth_token: str = ""
 
 
 @lru_cache(maxsize=1)
