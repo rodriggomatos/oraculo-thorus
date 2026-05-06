@@ -54,6 +54,9 @@ Thumbs.db
 # Claude Code (local session cache, not part of the repo)
 .claude/
 
+# Debug scripts pessoais (qualquer apps/ai/inspect_*.py é ad-hoc; não versionar)
+apps/ai/inspect_*.py
+
 # Logs
 *.log
 logs/
