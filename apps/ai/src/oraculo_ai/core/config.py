@@ -54,7 +54,7 @@ class Settings(BaseSettings):
     next_public_supabase_url: str = ""
     next_public_supabase_publishable_key: str = ""
 
-    document_ai_incoming_dir: str = "C:/oraculo-thorus/incoming"
+    document_ai_incoming_dir: str = "/var/oraculo-thorus/incoming"
 
     allowed_email_domain: str = "thorusengenharia.com.br"
     supabase_jwt_secret: str = ""
