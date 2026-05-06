@@ -8,7 +8,16 @@ A tool roda contra a role read-only `thor_query_ro` (criada na migration
   - statement_timeout=10s por query (SET LOCAL na transação).
   - LIMIT automático: injeta LIMIT 100 se ausente; capa LIMIT em 1000.
   - Erro mapeado pra mensagem PT-BR acionável.
-  - Audit via Langfuse @observe.
+  - Audit via Langfuse: a tool atualiza o span CORRENTE com input/output;
+    o span pai vem do `@observe(as_type='agent')` em answer_question.
+
+NÃO empilhar `@observe` por cima de `@tool`: a ordem de aplicação faz com
+que `@observe` envolva o StructuredTool gerado por `@tool` numa função,
+e o create_agent do LangGraph quebra ao tentar inspecionar a signature
+(TypeError: descriptor '__call__' for 'type' objects doesn't apply to a
+'StructuredTool' object). Outras tools do projeto seguem o padrão simples
+(@tool puro) e isso já é suficiente — o span do agent envolve toda a
+execução, e update_current_span agrega na trace.
 
 Permissão: gateada no agent.py via `check_permission(user,
 'query_database')` — admin sempre, demais precisam permissão explícita
@@ -21,7 +30,7 @@ import time
 from typing import Any
 
 from langchain_core.tools import tool
-from langfuse import get_client, observe
+from langfuse import get_client
 from psycopg import AsyncConnection
 from psycopg.errors import QueryCanceled
 from psycopg.rows import dict_row
@@ -85,7 +94,6 @@ def _truncate_for_llm(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-@observe(as_type="tool", name="query_database")
 @tool
 async def query_database(sql: str) -> str:
     """Executa SQL SELECT read-only no banco da Thórus e retorna JSON.
