@@ -38,8 +38,14 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   const path = request.nextUrl.pathname;
   const isPublic = PUBLIC_PATHS.some((p) => path === p || path.startsWith(`${p}/`));
 
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const forwardedProto = request.headers.get("x-forwarded-proto");
+  const host = forwardedHost ?? request.headers.get("host") ?? request.nextUrl.host;
+  const proto = forwardedProto ?? request.nextUrl.protocol.replace(":", "");
+  const baseUrl = `${proto}://${host}`;
+
   if (!user && !isPublic) {
-    const loginUrl = new URL("/login", request.url);
+    const loginUrl = new URL("/login", baseUrl);
     loginUrl.searchParams.set("from", path);
     return NextResponse.redirect(loginUrl);
   }
@@ -49,7 +55,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     const domain = email.split("@")[1]?.toLowerCase() ?? "";
     if (domain !== ALLOWED_DOMAIN) {
       await supabase.auth.signOut();
-      const errorUrl = new URL("/auth/error", request.url);
+      const errorUrl = new URL("/auth/error", baseUrl);
       errorUrl.searchParams.set("reason", "domain");
       return NextResponse.redirect(errorUrl);
     }
