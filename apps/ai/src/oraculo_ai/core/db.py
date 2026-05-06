@@ -11,14 +11,18 @@ _async_engine: AsyncEngine | None = None
 _sync_engine: Engine | None = None
 
 
-async def init_db(database_url: str, pool_size: int = 5) -> None:
+async def init_db(
+    database_url: str,
+    pool_size: int = 5,
+    min_size: int = 1,
+) -> None:
     global _pool, _async_engine, _sync_engine
     if _pool is not None:
         raise RuntimeError("DB already initialized; call close_db() before re-initializing")
 
     pool = AsyncConnectionPool(
         database_url,
-        min_size=1,
+        min_size=min_size,
         max_size=pool_size,
         open=False,
         check=AsyncConnectionPool.check_connection,

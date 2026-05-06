@@ -37,6 +37,8 @@ class Settings(BaseSettings):
     supabase_publishable_key: str = ""
     supabase_secret_key: str = ""
     database_url: str = "postgresql://postgres:postgres@localhost:5432/postgres"
+    db_pool_max_size: int = 10
+    db_pool_min_size: int = 2
     # Conexão read-only usada pela tool query_database do Thor. Roda com a
     # role thor_query_ro (criada na migration 20260505160000) — só SELECT em
     # tabelas de domínio, sem acesso a checkpoint_*/auth/storage. Vazio por
