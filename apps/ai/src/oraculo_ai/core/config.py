@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     )
 
     env: Literal["development", "production"] = "development"
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     allowed_origins: str = "http://localhost:3000"
 
     llm_provider: str = "anthropic"
