@@ -9,7 +9,12 @@ if TYPE_CHECKING:
 
 
 def configure_logging(settings: "Settings") -> None:
-    """Configure root logger for stdout output with level from settings."""
+    """Configure root logger for stdout output with level from settings.
+
+    Force uvicorn loggers to propagate to root so they share the same
+    timestamped format. Without this, uvicorn installs its own handlers
+    with its own formatter (no timestamp) and bypasses our config.
+    """
     level = getattr(logging, settings.log_level.upper(), logging.INFO)
     logging.basicConfig(
         level=level,
@@ -18,6 +23,10 @@ def configure_logging(settings: "Settings") -> None:
         stream=sys.stdout,
         force=True,
     )
-    logging.getLogger("uvicorn.access").setLevel(level)
+    for name in ("uvicorn", "uvicorn.access", "uvicorn.error"):
+        uvi_log = logging.getLogger(name)
+        uvi_log.handlers.clear()
+        uvi_log.propagate = True
+        uvi_log.setLevel(level)
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
