@@ -2,6 +2,7 @@
 
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -16,6 +17,9 @@ class Settings(BaseSettings):
         extra="ignore",
         case_sensitive=False,
     )
+
+    env: Literal["development", "production"] = "development"
+    allowed_origins: str = "http://localhost:3000"
 
     llm_provider: str = "anthropic"
     llm_model_fast: str = "anthropic/claude-haiku-4-5"
@@ -61,6 +65,10 @@ class Settings(BaseSettings):
 
     ldp_master_sheet_id: str = "1zVwOQQVe6MAZoi4HV8sL1muKlNHZDf_G9F06E7h9aOE"
     ldp_master_tab: str = "Lista de definições"
+
+    @property
+    def allowed_origins_list(self) -> list[str]:
+        return [s.strip() for s in self.allowed_origins.split(",") if s.strip()]
 
 
 @lru_cache(maxsize=1)
