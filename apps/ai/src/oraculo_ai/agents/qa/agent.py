@@ -20,10 +20,12 @@ from oraculo_ai.agents.qa.tools import (
     list_projects,
     make_create_project,
     make_register_definition,
+    query_database,
     search_definitions,
 )
 from oraculo_ai.core.config import get_settings
 from oraculo_ai.ingestion.schema import SYSTEM_USER_ID
+from oraculo_ai.permissions import check_permission
 
 
 def _resolve_api_key(model: str, settings: Any) -> str | None:
@@ -165,6 +167,45 @@ coleta metadados. Ela retorna `status` que indica resultado:
 'success' / 'permission_denied' / 'spreadsheet_inaccessible' /
 'cancelled_by_user' / 'already_exists' / 'error'. Comunica em prosa.
 
+QUERY GENÉRICA — análises ad-hoc (REQUER permissão `query_database` no perfil)
+Tool: query_database(sql)
+Disponível APENAS quando o user é admin ou tem `query_database` em
+permissions. Se você não vê essa tool no toolset, NÃO TENTE chamá-la — ela
+não existe pro usuário atual.
+
+Quando usar: perguntas exploratórias que NÃO são cobertas por tools
+específicas. Exemplos:
+  - "Quais projetos não têm escopo contratado?"
+  - "Quantos projetos por estado?"
+  - "Compare 26033 e 26034 (cidade, escopo, definições)"
+  - "Lista de definições com status 'Em análise' há mais de X dias"
+
+Quando NÃO usar: se uma tool específica resolve. Tool específica é mais
+barata, tem schema validado e narrativa clara. Exemplos do que NÃO chamar
+via query_database:
+  - "Quais projetos existem?" → use list_projects
+  - "Material da tubulação @26002?" → use search_definitions
+  - "Escopo do 26033?" → use get_project_scope
+
+Restrições importantes ao gerar SQL:
+  - SOMENTE SELECT. INSERT/UPDATE/DELETE/DROP/ALTER falham (role read-only).
+  - Apenas tabelas de domínio em public: projects, definitions,
+    project_scope, scope_template, ldp_discipline, scope_to_ldp_discipline,
+    source_documents, user_profiles, city. NÃO tente acessar
+    auth.* / storage.* / checkpoint_* / supabase_migrations.* (bloqueados).
+  - Sempre use LIMIT (a tool injeta LIMIT 100 se ausente, capa em 1000).
+  - Filtre bem (WHERE) e prefira agregações pra resultados grandes.
+  - Timeout de 10s — se demorar, refine a query.
+
+A tool retorna JSON: `{columns, rows, row_count, applied_limit?, elapsed_ms}`
+em sucesso, `{error}` em falha. Use o resultado pra montar a resposta em
+prosa pro usuário; nunca jogue o JSON cru.
+
+Se a pergunta REQUER query_database mas você não tem a tool no toolset,
+responda: "Essa pergunta requer permissão de admin pra rodar query no
+banco. Fale com Rodrigo ou Cristiano pra liberar acesso." NÃO tente usar
+outras tools como workaround.
+
 REGRA CRÍTICA — FILTRO LDP POR ESCOPO CONTRATADO
 
 Categorias da LDP: Hidráulica, Sanitário, Piscina, Elétrico/Comunicação, SPDA,
@@ -239,19 +280,28 @@ async def answer_question(
     register_definition_bound = make_register_definition(effective_user.user_id)
     create_project_bound = make_create_project(effective_user)
 
+    tools_list: list[Any] = [
+        search_definitions,
+        list_projects,
+        find_project_by_name,
+        register_definition_bound,
+        create_project_bound,
+        get_project_scope_tool,
+        get_project_scope_history_tool,
+        get_active_ldp_disciplines_tool,
+        *drive_tools,
+    ]
+
+    # query_database só entra no toolset quando user é admin OU tem
+    # permission 'query_database' em user_profiles.permissions. Engineer
+    # comum nem vê a tool — Thor responde via prompt explicando que
+    # precisa pedir liberação.
+    if check_permission(effective_user, "query_database"):
+        tools_list.append(query_database)
+
     agent = create_agent(
         model=llm,
-        tools=[
-            search_definitions,
-            list_projects,
-            find_project_by_name,
-            register_definition_bound,
-            create_project_bound,
-            get_project_scope_tool,
-            get_project_scope_history_tool,
-            get_active_ldp_disciplines_tool,
-            *drive_tools,
-        ],
+        tools=tools_list,
         system_prompt=_render_system_prompt(effective_user),
         checkpointer=checkpointer if checkpointer is not None else _checkpointer,
     )
